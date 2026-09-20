@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="N1學習專區｜2026第2回JLPT特訓班。課程進度、文法測驗、補充單字與排行榜。">
+    <meta name="theme-color" content="#4A261D">
+    <title>N1學習專區｜2026第2回JLPT特訓班</title>
+    <link rel="icon" href="assets/new-logo.jpg" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=20260920-4">
+    <script src="js/config.js?v=20260920-4"></script>
+    <script src="js/app.js?v=20260920-4" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到主要內容</a>
+
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="#weekly" aria-label="N1 學習專區首頁">
+          <img class="brand-logo" src="assets/brand-logo.png" alt="王可樂日語">
+        </a>
+        <nav class="main-nav" aria-label="主要選單">
+          <a href="#weekly">本週任務</a>
+          <a href="#schedule">八週進度</a>
+          <a href="grammar.html?round=1">文法測驗</a>
+          <a href="vocabulary.html" target="_blank" rel="noopener noreferrer">補充單字</a>
+          <a href="leaderboard.html" target="_blank" rel="noopener noreferrer">排行榜</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="section" id="weekly" aria-labelledby="weekly-title">
+        <div class="container">
+          <span id="announcement-text" hidden></span>
+          <span id="api-state" role="status" hidden>連線中</span>
+          <div class="testing-banner" id="testing-banner" hidden></div>
+          <div class="section-heading">
+            <div>
+              <h1 id="weekly-title">N1學習專區｜2026第2回JLPT特訓班</h1>
+              <p id="weekly-subtitle">正在確認目前週次……</p>
+            </div>
+            <div class="section-links">
+              <a class="text-link" href="#schedule">八週進度</a>
+              <a class="text-link" href="grammar.html?round=1">文法測驗</a>
+              <a class="text-link" href="vocabulary.html" target="_blank" rel="noopener noreferrer">單字背誦與測驗</a>
+              <a class="text-link" href="leaderboard.html" target="_blank" rel="noopener noreferrer">排行榜</a>
+            </div>
+          </div>
+          <div class="task-grid" id="current-week-tasks" aria-live="polite">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section-tint" id="schedule" aria-labelledby="schedule-title">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <h2 id="schedule-title">八週課程進度</h2>
+              <p>選擇週次，查看文法、聽力、補習與單字安排。</p>
+            </div>
+          </div>
+          <div class="week-tabs" id="week-tabs" role="tablist" aria-label="課程週次"></div>
+          <div class="week-detail" id="week-detail" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="section" id="tutoring" aria-labelledby="tutoring-title">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <h2 id="tutoring-title">補習日直播</h2>
+              <p>每週三 19:00 直播複習，由助教直接點名，學生不需自行回報。</p>
+            </div>
+          </div>
+          <div class="compact-grid" id="tutoring-list"></div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <div>
+          <strong>王可樂日語</strong>
+          <p>2026 第二回日檢 N1 特訓班</p>
+        </div>
+        <p>課程觀看仍以王可樂日語會員官網為準。</p>
+      </div>
+    </footer>
+
+    <dialog class="modal" id="listening-dialog" aria-labelledby="listening-dialog-title">
+      <form class="modal-card" id="listening-form">
+        <div class="modal-header">
+          <div>
+            <h2 id="listening-dialog-title">聽力課資格驗證</h2>
+          </div>
+          <button class="icon-button" type="button" data-close-dialog="listening-dialog" aria-label="關閉">×</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-intro" id="listening-task-description"></p>
+          <input id="listening-task-no" type="hidden">
+          <label class="field">
+            <span>特訓班學員編號</span>
+            <input id="listening-student-id" name="student_id" type="text" maxlength="5" autocomplete="off" placeholder="例如：N1001" required>
+            <small>只有「有聽力」欄位已勾選的學員可以進入及回報。</small>
+          </label>
+          <div class="listening-access-panel" id="listening-access-panel" hidden>
+            <a class="button button-secondary" id="listening-course-link" href="#" target="_blank" rel="noopener noreferrer">前往官網觀看聽力課</a>
+            <label class="check-field">
+              <input id="listening-confirmed" type="checkbox">
+              <span>我確認已看完本堂聽力錄播課程</span>
+            </label>
+          </div>
+          <div class="form-message" id="listening-message" role="status" aria-live="polite"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="button button-ghost" type="button" data-close-dialog="listening-dialog">取消</button>
+          <button class="button button-primary" id="listening-submit" type="submit">驗證聽力資格</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

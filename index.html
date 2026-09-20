@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="王可樂日語 JLPT N1、N2、N3 特訓班入口網站">
+  <title>JLPT 特訓班｜王可樂日語</title>
+  <link rel="icon" href="n1/assets/favicon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #253047;
+      --muted: #667085;
+      --paper: #fffdf8;
+      --line: #eadfce;
+      --accent: #da4f3f;
+      --accent-dark: #a92f25;
+      --shadow: 0 18px 45px rgba(84, 61, 43, .13);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px 20px;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background:
+        radial-gradient(circle at 12% 15%, rgba(244, 192, 126, .25), transparent 29%),
+        radial-gradient(circle at 86% 82%, rgba(218, 79, 63, .16), transparent 28%),
+        #f7f2e9;
+    }
+
+    main {
+      width: min(920px, 100%);
+      padding: clamp(30px, 6vw, 64px);
+      text-align: center;
+      background: rgba(255, 253, 248, .94);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .brand {
+      width: min(210px, 55vw);
+      height: auto;
+      margin-bottom: 24px;
+      border-radius: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      letter-spacing: .04em;
+    }
+
+    .lead {
+      margin: 14px 0 34px;
+      color: var(--muted);
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+    }
+
+    .levels {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .level {
+      display: grid;
+      gap: 8px;
+      padding: 26px 18px;
+      color: var(--ink);
+      text-decoration: none;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: 0 8px 22px rgba(84, 61, 43, .08);
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .level:hover,
+    .level:focus-visible {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      box-shadow: 0 14px 28px rgba(169, 47, 37, .16);
+      outline: none;
+    }
+
+    .level strong {
+      color: var(--accent-dark);
+      font-size: 2rem;
+    }
+
+    .level span { color: var(--muted); }
+
+    @media (max-width: 640px) {
+      .levels { grid-template-columns: 1fr; }
+      .level { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <img class="brand" src="n1/assets/brand-logo.png" alt="王可樂日語">
+    <h1>JLPT 特訓班</h1>
+    <p class="lead">請選擇你的學習等級</p>
+    <nav class="levels" aria-label="JLPT 等級">
+      <a class="level" href="n1/"><strong>N1</strong><span>進入 N1 特訓班</span></a>
+      <a class="level" href="n2/"><strong>N2</strong><span>進入 N2 特訓班</span></a>
+      <a class="level" href="n3/"><strong>N3</strong><span>進入 N3 特訓班</span></a>
+    </nav>
+  </main>
+</body>
+</html>

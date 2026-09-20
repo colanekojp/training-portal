@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="2026 第二回 JLPT N1 特訓班文法測驗。閱讀文章、完成全部題目並登記學習進度。">
+    <meta name="theme-color" content="#4A261D">
+    <title>N1 文法測驗｜2026第2回JLPT特訓班</title>
+    <link rel="icon" href="assets/new-logo.jpg" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=20260920-4">
+    <script src="js/config.js?v=20260920-4"></script>
+    <script src="js/grammar.js?v=20260920-4" defer></script>
+  </head>
+  <body class="standalone-page grammar-page">
+    <a class="skip-link" href="#main-content">跳到測驗內容</a>
+
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="index.html" aria-label="返回 N1 學習專區">
+          <img class="brand-logo" src="assets/brand-logo.png" alt="王可樂日語">
+        </a>
+        <a class="button button-small button-outline header-back" href="index.html">返回 N1 學習專區</a>
+      </div>
+    </header>
+
+    <main class="standalone-main" id="main-content">
+      <section class="standalone-section">
+        <div class="container grammar-container">
+          <div class="standalone-heading grammar-heading">
+            <div>
+              <span class="grammar-eyebrow">N1 特訓班文法測驗</span>
+              <h1 id="page-title">第 1 回文法測驗</h1>
+              <p id="page-description">閱讀本回文章並完成所有題目，送出後即完成本回進度登記。</p>
+            </div>
+          </div>
+
+          <div class="testing-banner" id="testing-banner" hidden>
+            Demo 模式：使用真實 N1 題目預覽，送出結果不計分，也不會寫入 Google Sheet。
+            <a href="grammar.html?round=1">切換正式模式</a>
+          </div>
+
+          <nav class="unit-selector" id="round-selector" aria-label="選擇文法回次"></nav>
+
+          <aside class="grammar-notice" aria-label="作答說明">
+            <strong>作答說明</strong>
+            <p>八回皆可自由開啟。請先閱讀每個區段的內容，再完成全部題目。沒有及格門檻；作答結果都會保存，在本回期限內提交才會登記點數。</p>
+          </aside>
+
+          <div class="learning-loading" id="page-loading" role="status">正在載入第 1 回文法測驗……</div>
+
+          <form id="grammar-form" hidden novalidate>
+            <div class="grammar-meta" id="grammar-meta"></div>
+            <div class="grammar-sections" id="grammar-sections"></div>
+
+            <section class="grammar-submit-panel" aria-labelledby="submit-title">
+              <div>
+                <h2 id="submit-title">完成作答並登記進度</h2>
+                <p>學員編號格式為 N1 加三位數字，例如 N1001。若已超過本回期限，系統仍會保存作答，但不計點。</p>
+              </div>
+              <label class="field grammar-student-field">
+                <span>特訓班學員編號</span>
+                <input id="student-id" name="student_id" type="text" maxlength="5" autocomplete="off" inputmode="text" placeholder="例如：N1001" required>
+              </label>
+              <label class="check-field grammar-confirm-field">
+                <input id="submit-confirmed" type="checkbox" required>
+                <span>我確認已閱讀本回內容，並完成全部題目</span>
+              </label>
+              <div class="form-message" id="submit-message" role="status" aria-live="polite"></div>
+              <button class="button button-primary grammar-submit-button" id="submit-button" type="submit">提交本回測驗</button>
+            </section>
+          </form>
+
+          <section class="grammar-result" id="grammar-result" hidden aria-live="polite"></section>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

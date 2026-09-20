@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="王可樂日語 N1 特訓班補充單字背誦與測驗。">
+    <title>N1 單字背誦與測驗｜王可樂日語</title>
+    <link rel="icon" href="assets/new-logo.jpg" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=20260920-4">
+    <script src="js/config.js?v=20260920-4"></script>
+    <script src="js/vocabulary.js?v=20260920-4" defer></script>
+  </head>
+  <body class="standalone-page">
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="index.html" aria-label="返回 N1 特訓班入口網站">
+          <img class="brand-logo" src="assets/brand-logo.png" alt="王可樂日語">
+        </a>
+        <a class="button button-small button-outline header-back" href="index.html">返回入口網站</a>
+      </div>
+    </header>
+
+    <main class="standalone-main">
+      <section class="standalone-section">
+        <div class="container">
+          <div class="standalone-heading">
+            <div>
+              <h1>N1 單字背誦與測驗</h1>
+              <p>八回全部開放，可依自己的進度自由練習。</p>
+            </div>
+          </div>
+
+          <div class="testing-banner" id="testing-banner" hidden>
+            Demo 模式：可展示單字與測驗流程，完成登記與測驗送出都不會寫入 Google Sheet。
+            <a href="vocabulary.html?unit=1">切換正式模式</a>
+          </div>
+
+          <nav class="unit-selector" id="unit-selector" aria-label="選擇單字回次"></nav>
+          <div class="learning-loading" id="page-loading">正在載入單字……</div>
+
+          <section class="learning-surface" id="study-panel" hidden aria-labelledby="study-title">
+            <div class="learning-topbar">
+              <h2 id="study-title">第 1 回單字背誦</h2>
+              <button class="button button-small button-secondary" id="show-quiz" type="button">進入本回測驗</button>
+            </div>
+            <div class="progress-row">
+              <span id="vocabulary-progress-text">1 / 1</span>
+              <div class="progress-track"><span id="vocabulary-progress-bar"></span></div>
+            </div>
+            <button class="flashcard" id="flashcard" type="button" aria-label="翻開單字卡">
+              <span class="flashcard-inner">
+                <span class="flashcard-face flashcard-front">
+                  <small>點一下查看答案</small>
+                  <strong lang="ja" id="flashcard-word"></strong>
+                </span>
+                <span class="flashcard-face flashcard-back">
+                  <span lang="ja" class="reading" id="flashcard-reading"></span>
+                  <strong id="flashcard-meaning"></strong>
+                  <span lang="ja" id="flashcard-example-ja"></span>
+                  <span id="flashcard-example-zh"></span>
+                </span>
+              </span>
+            </button>
+            <div class="card-controls">
+              <button class="button button-outline" id="vocabulary-prev" type="button">上一張</button>
+              <button class="button button-outline" id="vocabulary-next" type="button">下一張</button>
+            </div>
+            <div class="completion-panel">
+              <div>
+                <h3>完成這回單字了嗎？</h3>
+                <p>輸入 N1 加三位數字的學員編號，即可登記完成紀錄。</p>
+              </div>
+              <label class="field compact-field">
+                <span>學員編號</span>
+                <input id="vocabulary-student-id" type="text" maxlength="5" autocomplete="off" placeholder="例如：N1001">
+              </label>
+              <div class="completion-actions">
+                <button class="button button-secondary" id="complete-vocabulary" type="button">登記單字完成</button>
+                <button class="button button-primary" id="start-quiz" type="button">開始本回測驗</button>
+              </div>
+              <div class="form-message" id="vocabulary-message" role="status" aria-live="polite"></div>
+            </div>
+          </section>
+
+          <section class="learning-surface" id="quiz-panel" hidden aria-labelledby="quiz-title">
+            <div class="learning-topbar">
+              <h2 id="quiz-title">第 1 回單字測驗</h2>
+              <button class="button button-small button-outline" id="back-to-study" type="button">返回單字卡</button>
+            </div>
+            <div class="learning-loading" id="quiz-loading">正在載入測驗……</div>
+            <form id="quiz-form" hidden>
+              <div class="quiz-questions" id="quiz-questions"></div>
+              <div class="quiz-submit-panel">
+                <label class="field">
+                  <span>學員編號</span>
+                  <input id="quiz-student-id" type="text" maxlength="5" autocomplete="off" placeholder="例如：N1001">
+                </label>
+                <button class="button button-primary" id="quiz-submit" type="submit">提交測驗</button>
+                <div class="form-message" id="quiz-message" role="status" aria-live="polite"></div>
+              </div>
+              <div class="quiz-result" id="quiz-result" hidden></div>
+            </form>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
