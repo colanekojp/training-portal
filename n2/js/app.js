@@ -195,6 +195,9 @@ function renderCurrentWeek() {
     el['weekly-subtitle'].textContent = `Demo 模式：正在預覽第 ${currentWeek} 週，所有操作都不會寫入後台。`;
     const week = state.portal.weeks[(currentWeek || 1) - 1];
     el['current-week-tasks'].innerHTML = renderWeekTasks(week);
+  } else if (shouldShowFirstWeekPreview()) {
+    el['weekly-subtitle'].textContent = '9/23 開學典禮後可先查看第一週完整安排；活動依計點開始時間排序。';
+    el['current-week-tasks'].innerHTML = renderWeekTasks(state.portal.weeks[0]);
   } else {
     const upcomingTasks = getUpcomingDeadlineTasks();
     el['weekly-subtitle'].textContent = upcomingTasks.length
@@ -204,6 +207,13 @@ function renderCurrentWeek() {
       ? renderTaskItems(upcomingTasks)
       : '<p class="empty-state">目前沒有進入七天截止提醒的活動。</p>';
   }
+}
+
+function shouldShowFirstWeekPreview() {
+  const now = new Date(state.portal.generatedAt || Date.now());
+  const openingCeremonyAt = new Date('2026-09-23T00:00:00+08:00');
+  const firstScoringAt = new Date(state.portal.weeks[0]?.grammar?.releaseAt || '');
+  return !Number.isNaN(firstScoringAt.getTime()) && now >= openingCeremonyAt && now < firstScoringAt;
 }
 
 function renderWeekTabs() {
