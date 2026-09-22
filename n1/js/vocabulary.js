@@ -1,5 +1,4 @@
 const API_URL = window.PORTAL_CONFIG.API_URL;
-const COURSE_URL = 'https://colanekojp.com.tw/member_course/';
 const LEARNING_CACHE_MAX_AGE = 10 * 60 * 1000;
 const PAGE_PARAMS = new URLSearchParams(window.location.search);
 const TESTING_MODE = window.PORTAL_CONFIG.DEMO_MODE_ENABLED && PAGE_PARAMS.get('testing') === '1';
@@ -293,12 +292,7 @@ async function submitQuiz(event) {
       <span class="result-kicker">第 ${state.unit} 回測驗完成</span>
       <strong>${data.correctCount} / ${data.totalCount}</strong>
       <p>答對率 ${data.accuracyPercent}%</p>
-      ${wrongCount ? `<p class="result-note">答對 ${data.correctCount} 題、答錯 ${wrongCount} 題。畫面已用顏色標示你的答案與正確答案，可往上逐題檢視。</p>` : '<p class="result-note">全部答對，做得很好！每一題都已用綠色標示。</p>'}
-      <aside class="grammar-course-cta">
-        <strong>想把單字記得更熟、用得更準嗎？</strong>
-        <p>回到王可樂日語課程繼續複習，把今天答錯的單字真正變成你的實力！</p>
-        <a class="button button-primary" href="${COURSE_URL}" target="_blank" rel="noopener noreferrer">前往官網看課程</a>
-      </aside>`;
+      ${wrongCount ? `<p class="result-note">答對 ${data.correctCount} 題、答錯 ${wrongCount} 題。畫面已用顏色標示你的答案與正確答案，可往上逐題檢視。</p>` : '<p class="result-note">全部答對，做得很好！每一題都已用綠色標示。</p>'}`;
     el['quiz-result'].hidden = false;
     el['quiz-questions'].querySelectorAll('input').forEach((input) => { input.disabled = true; });
     el['quiz-result'].scrollIntoView({ behavior: 'smooth', block: 'center' });
