@@ -1,5 +1,6 @@
 const API_URL = window.PORTAL_CONFIG.API_URL;
 const LEVEL = 'N3';
+const COURSE_URL = 'https://colanekojp.com.tw/member_course/';
 const params = new URLSearchParams(window.location.search);
 const DEMO_MODE = window.PORTAL_CONFIG.DEMO_MODE_ENABLED && params.get('testing') === '1';
 const GRAMMAR_CACHE_MAX_AGE = 30 * 60 * 1000;
@@ -125,7 +126,7 @@ async function loadGrammarTest() {
 }
 
 async function loadDemoGrammarTest(round) {
-  const response = await fetch('assets/n3-grammar-demo.json?v=20260922-6');
+  const response = await fetch('assets/n3-grammar-demo.json?v=20260922-7');
   if (!response.ok) throw new Error('Demo 題庫載入失敗。');
   const payload = await response.json();
   const data = payload.units?.find((unit) => Number(unit.unit) === round);
@@ -143,7 +144,7 @@ async function loadCachedGrammarTest(round) {
 
 function readGrammarCache(round) {
   try {
-    const cached = JSON.parse(localStorage.getItem(`n3-grammar-cache-v2-${round}`));
+    const cached = JSON.parse(localStorage.getItem(`n3-grammar-cache-v3-${round}`));
     if (!cached?.data || Date.now() - Number(cached.savedAt) > GRAMMAR_CACHE_MAX_AGE) return null;
     return cached.data;
   } catch (error) {
@@ -153,7 +154,7 @@ function readGrammarCache(round) {
 
 function writeGrammarCache(round, data) {
   try {
-    localStorage.setItem(`n3-grammar-cache-v2-${round}`, JSON.stringify({ savedAt: Date.now(), data }));
+    localStorage.setItem(`n3-grammar-cache-v3-${round}`, JSON.stringify({ savedAt: Date.now(), data }));
   } catch (error) {
     // 無痕模式或瀏覽器停用儲存時，仍可直接讀取 API。
   }
@@ -189,21 +190,99 @@ function renderGrammarTest() {
           <small>${questions.length} 題</small>
         </div>
         <h2 class="sr-only" id="section-${sectionNo}-title">問題 ${sectionNo}</h2>
-        <div class="grammar-reading">${contents.map((item) => renderContentBlock(item, clozeQuestionNumbers)).join('')}</div>
-        <div class="grammar-question-list">${questions.map(renderQuestion).join('')}</div>
+        <div class="grammar-flow">${renderSectionFlow(contents, questions, clozeQuestionNumbers)}</div>
       </section>
     `;
   }).join('');
 }
 
+function renderSectionFlow(contents, questions, clozeQuestionNumbers) {
+  const hasExplicitFlow = [...contents, ...questions].some((item) => Number(item.flow_order) > 0);
+  const items = [
+    ...contents.map((item) => ({ kind: 'content', item })),
+    ...questions.map((item) => ({ kind: 'question', item }))
+  ].sort((a, b) => {
+    if (hasExplicitFlow) {
+      return Number(a.item.flow_order || 0) - Number(b.item.flow_order || 0)
+        || (a.kind === 'content' ? -1 : 1);
+    }
+    if (a.kind !== b.kind) return a.kind === 'content' ? -1 : 1;
+    return Number(a.item.sort_order || a.item.question_no || 0)
+      - Number(b.item.sort_order || b.item.question_no || 0);
+  });
+
+  const blocks = [];
+  let activeGroup = null;
+  items.forEach((entry) => {
+    const groupId = String(entry.item.group_id || '');
+    const html = entry.kind === 'content'
+      ? renderContentBlock(entry.item, clozeQuestionNumbers)
+      : renderQuestion(entry.item);
+    if (!html) return;
+    if (!groupId || entry.item.content_type === 'instruction') {
+      activeGroup = null;
+      blocks.push(html);
+      return;
+    }
+    if (!activeGroup || activeGroup.id !== groupId) {
+      activeGroup = { id: groupId, html: [] };
+      blocks.push(activeGroup);
+    }
+    activeGroup.html.push(html);
+  });
+
+  return blocks.map((block) => typeof block === 'string'
+    ? block
+    : `<div class="grammar-flow-group" data-group-id="${escapeAttribute(block.id)}">${block.html.join('')}</div>`
+  ).join('');
+}
+
 function renderContentBlock(item, clozeQuestionNumbers = []) {
+  if (item.layout_type === 'reference_fragment') return '';
   if (item.content_type === 'instruction') {
     return `<p class="grammar-instruction" lang="ja">${renderPassageQuestionNumbers(item.content, clozeQuestionNumbers, true)}</p>`;
+  }
+  if (item.layout_type === 'reference_composite' && item.layout_json) {
+    return renderStructuredLayout(item.layout_json);
   }
   if (item.content_type === 'table_json') {
     return renderTableContent(item.content);
   }
   return `<div class="grammar-passage" lang="ja">${renderPassageQuestionNumbers(item.content, clozeQuestionNumbers)}</div>`;
+}
+
+function renderStructuredLayout(value) {
+  try {
+    const layout = JSON.parse(value);
+    if (!Array.isArray(layout.blocks)) throw new Error('missing blocks');
+    const blocks = layout.blocks.map((block) => {
+      if (block.type === 'text') {
+        return `<div class="grammar-reference-note" lang="ja">${renderMultiline(block.text)}</div>`;
+      }
+      if (block.type !== 'table' || !Array.isArray(block.rows)) return '';
+      const rows = block.rows.map((row) => {
+        const cells = Array.isArray(row.cells) ? row.cells : [];
+        return `<tr>${cells.map((cell) => {
+          const item = typeof cell === 'string' ? { text: cell } : cell;
+          const colSpan = Math.max(1, Math.min(20, Number(item.colSpan) || 1));
+          const rowSpan = Math.max(1, Math.min(50, Number(item.rowSpan) || 1));
+          const align = ['left', 'center', 'right', 'justify'].includes(item.align) ? item.align : 'left';
+          const vertical = ['top', 'center', 'bottom'].includes(item.vertical) ? item.vertical : 'top';
+          const classes = [
+            `is-${align}`,
+            `is-v-${vertical}`,
+            item.weight === 'bold' ? 'is-bold' : '',
+            item.tone === 'header' ? 'is-header' : ''
+          ].filter(Boolean).join(' ');
+          return `<td class="${classes}" colspan="${colSpan}" rowspan="${rowSpan}" lang="ja">${renderMultiline(item.text)}</td>`;
+        }).join('')}</tr>`;
+      }).join('');
+      return `<div class="grammar-reference-table-wrap"><table class="grammar-reference-table"><tbody>${rows}</tbody></table></div>`;
+    }).join('');
+    return `<section class="grammar-reference-sheet" aria-label="閱讀資料">${blocks}</section>`;
+  } catch (error) {
+    return `<div class="grammar-passage" lang="ja">${renderMultiline(value)}</div>`;
+  }
 }
 
 function renderPassageQuestionNumbers(value, questionNumbers, allowInline = false) {
@@ -375,17 +454,20 @@ function showDemoResult() {
 }
 
 function showResult(data, message) {
-  const wrongIds = new Set(data.wrongQuestionIds || []);
-  state.test.questions.forEach((question) => {
-    const card = document.querySelector(`[data-question-id="${cssEscape(question.question_id)}"]`);
-    if (card && wrongIds.has(question.question_id)) card.classList.add('is-wrong');
-  });
+  const questionResults = Array.isArray(data.questionResults) ? data.questionResults : [];
+  const wrongIds = new Set(data.wrongQuestionIds || questionResults.filter((item) => !item.isCorrect).map((item) => item.questionId));
+  applyQuestionFeedback(questionResults);
   el['grammar-result'].innerHTML = `
     <span class="result-kicker">第 ${state.round} 回完成</span>
     <h2>${escapeHtml(message || '文法進度已完成登記')}</h2>
     <strong>${data.correctCount} / ${data.totalCount}</strong>
     <p>答對率 ${data.accuracyPercent}%${data.lateSubmission ? '；已超過本回期限，作答已保存但本次不計點。' : data.alreadyCompleted ? '；本回先前已完成，因此不會重複積點。' : '；本回文法已登記完成並計點。'}</p>
-    ${wrongIds.size ? `<p class="result-note">畫面已標示本次答錯的 ${wrongIds.size} 題，可往上重新檢視。</p>` : '<p class="result-note">全部答對，做得很好！</p>'}
+    ${wrongIds.size ? `<p class="result-note">答對 ${data.correctCount} 題、答錯 ${wrongIds.size} 題。畫面已用顏色標示你的答案與正確答案，可往上逐題檢視。</p>` : '<p class="result-note">全部答對，做得很好！每一題都已用綠色標示。</p>'}
+    <aside class="grammar-course-cta">
+      <strong>想知道每一題為什麼這樣選嗎？</strong>
+      <p>完整文法觀念與題目詳解，都在王可樂日語的文法錄播課。現在就到官網，把答錯的地方真正學會！</p>
+      <a class="button button-primary" href="${COURSE_URL}" target="_blank" rel="noopener noreferrer">前往官網看完整詳解</a>
+    </aside>
     <div class="grammar-result-actions">
       <a class="button button-secondary" href="index.html">返回 N3 學習專區</a>
       ${state.round < 8 ? `<a class="button button-outline" href="grammar.html?round=${state.round + 1}">查看下一回</a>` : ''}
@@ -393,6 +475,34 @@ function showResult(data, message) {
   `;
   el['grammar-result'].hidden = false;
   el['grammar-result'].scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function applyQuestionFeedback(results) {
+  const byId = new Map(results.map((item) => [item.questionId, item]));
+  state.test.questions.forEach((question) => {
+    const result = byId.get(question.question_id);
+    const card = document.querySelector(`[data-question-id="${cssEscape(question.question_id)}"]`);
+    if (!card || !result) return;
+    const selectedOption = Number(result.selectedOption);
+    const correctOption = Number(result.correctOption);
+    const isCorrect = Boolean(result.isCorrect);
+    card.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
+    card.querySelectorAll('.grammar-option').forEach((option, index) => {
+      const optionNo = index + 1;
+      if (optionNo === correctOption) option.classList.add('is-answer-correct');
+      if (optionNo === selectedOption && optionNo !== correctOption) option.classList.add('is-answer-wrong');
+    });
+    const options = [question.option_1, question.option_2, question.option_3, question.option_4];
+    const selectedText = options[selectedOption - 1] || '';
+    const correctText = options[correctOption - 1] || '';
+    card.insertAdjacentHTML('beforeend', `
+      <div class="grammar-question-feedback ${isCorrect ? 'is-correct' : 'is-wrong'}" aria-live="polite">
+        <strong>${isCorrect ? '答對了' : '這題答錯了'}</strong>
+        <span>你的答案：${selectedOption}. ${escapeHtml(selectedText)}</span>
+        <span>正確答案：${correctOption}. ${escapeHtml(correctText)}</span>
+      </div>
+    `);
+  });
 }
 
 function disableCompletedForm() {
