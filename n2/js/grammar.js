@@ -125,7 +125,7 @@ async function loadGrammarTest() {
 }
 
 async function loadDemoGrammarTest(round) {
-  const response = await fetch('assets/n2-grammar-demo.json?v=20260920-4');
+  const response = await fetch('assets/n2-grammar-demo.json?v=20260922-5');
   if (!response.ok) throw new Error('Demo 題庫載入失敗。');
   const payload = await response.json();
   const data = payload.units?.find((unit) => Number(unit.unit) === round);
@@ -143,7 +143,7 @@ async function loadCachedGrammarTest(round) {
 
 function readGrammarCache(round) {
   try {
-    const cached = JSON.parse(localStorage.getItem(`n2-grammar-cache-v1-${round}`));
+    const cached = JSON.parse(localStorage.getItem(`n2-grammar-cache-v2-${round}`));
     if (!cached?.data || Date.now() - Number(cached.savedAt) > GRAMMAR_CACHE_MAX_AGE) return null;
     return cached.data;
   } catch (error) {
@@ -153,7 +153,7 @@ function readGrammarCache(round) {
 
 function writeGrammarCache(round, data) {
   try {
-    localStorage.setItem(`n2-grammar-cache-v1-${round}`, JSON.stringify({ savedAt: Date.now(), data }));
+    localStorage.setItem(`n2-grammar-cache-v2-${round}`, JSON.stringify({ savedAt: Date.now(), data }));
   } catch (error) {
     // 無痕模式或瀏覽器停用儲存時，仍可直接讀取 API。
   }
@@ -218,6 +218,29 @@ function renderTableContent(value) {
   }
 }
 
+function renderQuestionPrompt(question) {
+  const template = String(question.prompt_template || '');
+  if (question.question_type !== 'sentence_ordering' || !template) {
+    return renderMultiline(question.prompt);
+  }
+
+  let slotIndex = 0;
+  return template.split(/((?:\{\{(?:blank|star)\}\})+)/g).filter(Boolean).map((segment) => {
+    const tokens = segment.match(/\{\{(?:blank|star)\}\}/g);
+    if (!tokens) return renderMultiline(segment);
+    const starPosition = Number(question.star_position) || tokens.findIndex((token) => token === '{{star}}') + 1;
+    return `
+      <span class="sentence-ordering-slots" role="img" aria-label="4 個排列空格，第 ${starPosition} 格是星號位置">
+        ${tokens.map((token) => {
+          slotIndex += 1;
+          const isStar = token === '{{star}}';
+          return `<span class="ordering-slot${isStar ? ' is-star' : ''}" data-slot="${slotIndex}" aria-hidden="true">${isStar ? '<span class="ordering-star">★</span>' : ''}</span>`;
+        }).join('')}
+      </span>
+    `;
+  }).join('');
+}
+
 function renderQuestion(question, index) {
   const options = [question.option_1, question.option_2, question.option_3, question.option_4];
   const labels = ['1', '2', '3', '4'];
@@ -225,7 +248,7 @@ function renderQuestion(question, index) {
     <fieldset class="grammar-question" id="question-${escapeAttribute(question.question_id)}" data-question-id="${escapeAttribute(question.question_id)}">
       <legend>
         <span class="grammar-question-number">${question.question_no || index + 1}</span>
-        <span lang="ja">${renderMultiline(question.prompt)}</span>
+        <span lang="ja">${renderQuestionPrompt(question)}</span>
       </legend>
       <div class="grammar-options">
         ${options.map((option, optionIndex) => `

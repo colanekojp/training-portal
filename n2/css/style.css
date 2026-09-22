@@ -1527,6 +1527,32 @@ input:focus-visible,
   line-height: 1.7;
 }
 
+.sentence-ordering-slots {
+  display: inline-flex;
+  max-width: 100%;
+  gap: 8px;
+  margin: 0 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.ordering-slot {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 64px;
+  height: 1.45em;
+  color: var(--brand-brown);
+  border-bottom: 2px solid currentColor;
+  line-height: 1;
+}
+
+.ordering-star {
+  font-size: 1.08em;
+  line-height: 1;
+  transform: translateY(-2px);
+}
+
 .grammar-question-number {
   display: inline-grid;
   place-items: center;
@@ -2104,6 +2130,17 @@ input:focus-visible,
   .grammar-result {
     padding: 20px 16px;
     border-radius: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .sentence-ordering-slots {
+    gap: 5px;
+    margin: 6px 4px;
+  }
+
+  .ordering-slot {
+    min-width: 46px;
   }
 }
 
