@@ -5,18 +5,18 @@ const PAGE_PARAMS = new URLSearchParams(window.location.search);
 const TESTING_MODE = window.PORTAL_CONFIG.DEMO_MODE_ENABLED && PAGE_PARAMS.get('testing') === '1';
 const REQUESTED_TEST_WEEK = Number(PAGE_PARAMS.get('week'));
 const TEST_WEEK = REQUESTED_TEST_WEEK >= 1 && REQUESTED_TEST_WEEK <= 8 ? REQUESTED_TEST_WEEK : 1;
-const PORTAL_CACHE_KEY = 'n1-portal-cache-v3';
+const PORTAL_CACHE_KEY = 'n1-portal-cache-v4';
 const PORTAL_CACHE_MAX_AGE = 5 * 60 * 1000;
 
 const FALLBACK_WEEK_DATA = [
-  { grammar: [1, '2026-09-28T00:00:00+08:00', '2026-10-04T23:59:59+08:00'], listening: [1, '2026-10-02T00:00:00+08:00', '2026-10-04T23:59:59+08:00'], tutoring: [1, '2026-09-30T19:00:00+08:00'], vocabulary: 1 },
-  { grammar: [2, '2026-10-05T00:00:00+08:00', '2026-10-11T23:59:59+08:00'], listening: null, tutoring: [2, '2026-10-07T19:00:00+08:00'], vocabulary: 2 },
-  { grammar: [3, '2026-10-12T00:00:00+08:00', '2026-10-18T23:59:59+08:00'], listening: [2, '2026-10-16T00:00:00+08:00', '2026-10-18T23:59:59+08:00'], tutoring: [3, '2026-10-14T19:00:00+08:00'], vocabulary: 3 },
-  { grammar: [4, '2026-10-19T00:00:00+08:00', '2026-10-25T23:59:59+08:00'], listening: null, tutoring: [4, '2026-10-21T19:00:00+08:00'], vocabulary: 4 },
-  { grammar: [5, '2026-10-26T00:00:00+08:00', '2026-11-01T23:59:59+08:00'], listening: [3, '2026-10-30T00:00:00+08:00', '2026-11-01T23:59:59+08:00'], tutoring: [5, '2026-10-28T19:00:00+08:00'], vocabulary: 5 },
-  { grammar: [6, '2026-11-02T00:00:00+08:00', '2026-11-08T23:59:59+08:00'], listening: null, tutoring: [6, '2026-11-04T19:00:00+08:00'], vocabulary: 6 },
-  { grammar: [7, '2026-11-09T00:00:00+08:00', '2026-11-15T23:59:59+08:00'], listening: [4, '2026-11-13T00:00:00+08:00', '2026-11-15T23:59:59+08:00'], tutoring: [7, '2026-11-11T19:00:00+08:00'], vocabulary: 7 },
-  { grammar: [8, '2026-11-16T00:00:00+08:00', '2026-11-22T23:59:59+08:00'], listening: null, tutoring: [8, '2026-11-18T19:00:00+08:00'], vocabulary: 8 }
+  { grammar: [1, '2026-09-28T00:00:00+08:00', '2026-10-04T23:59:59+08:00'], listening: [1, '2026-10-02T00:00:00+08:00', '2026-10-04T23:59:59+08:00'], tutoring: [1, '2026-09-30T19:00:00+08:00', '2026-10-06T23:59:59+08:00'], vocabulary: [1, '2026-10-04T00:00:00+08:00', '2026-10-10T23:59:59+08:00'] },
+  { grammar: [2, '2026-10-05T00:00:00+08:00', '2026-10-11T23:59:59+08:00'], listening: null, tutoring: [2, '2026-10-07T19:00:00+08:00', '2026-10-13T23:59:59+08:00'], vocabulary: [2, '2026-10-11T00:00:00+08:00', '2026-10-17T23:59:59+08:00'] },
+  { grammar: [3, '2026-10-12T00:00:00+08:00', '2026-10-18T23:59:59+08:00'], listening: [2, '2026-10-16T00:00:00+08:00', '2026-10-18T23:59:59+08:00'], tutoring: [3, '2026-10-14T19:00:00+08:00', '2026-10-20T23:59:59+08:00'], vocabulary: [3, '2026-10-18T00:00:00+08:00', '2026-10-24T23:59:59+08:00'] },
+  { grammar: [4, '2026-10-19T00:00:00+08:00', '2026-10-25T23:59:59+08:00'], listening: null, tutoring: [4, '2026-10-21T19:00:00+08:00', '2026-10-27T23:59:59+08:00'], vocabulary: [4, '2026-10-25T00:00:00+08:00', '2026-10-31T23:59:59+08:00'] },
+  { grammar: [5, '2026-10-26T00:00:00+08:00', '2026-11-01T23:59:59+08:00'], listening: [3, '2026-10-30T00:00:00+08:00', '2026-11-01T23:59:59+08:00'], tutoring: [5, '2026-10-28T19:00:00+08:00', '2026-11-03T23:59:59+08:00'], vocabulary: [5, '2026-11-01T00:00:00+08:00', '2026-11-07T23:59:59+08:00'] },
+  { grammar: [6, '2026-11-02T00:00:00+08:00', '2026-11-08T23:59:59+08:00'], listening: null, tutoring: [6, '2026-11-04T19:00:00+08:00', '2026-11-10T23:59:59+08:00'], vocabulary: [6, '2026-11-08T00:00:00+08:00', '2026-11-14T23:59:59+08:00'] },
+  { grammar: [7, '2026-11-09T00:00:00+08:00', '2026-11-15T23:59:59+08:00'], listening: [4, '2026-11-13T00:00:00+08:00', '2026-11-15T23:59:59+08:00'], tutoring: [7, '2026-11-11T19:00:00+08:00', '2026-11-17T23:59:59+08:00'], vocabulary: [7, '2026-11-15T00:00:00+08:00', '2026-11-21T23:59:59+08:00'] },
+  { grammar: [8, '2026-11-16T00:00:00+08:00', '2026-11-22T23:59:59+08:00'], listening: null, tutoring: [8, '2026-11-18T19:00:00+08:00', '2026-11-24T23:59:59+08:00'], vocabulary: [8, '2026-11-22T00:00:00+08:00', '2026-11-28T23:59:59+08:00'] }
 ];
 
 const state = {
@@ -111,6 +111,7 @@ async function loadPortal() {
 function applyPortalData(portal, preserveSelection = false) {
   const previousWeek = state.selectedWeek;
   const nextPortal = JSON.parse(JSON.stringify(portal));
+  ensureScoringWindows(nextPortal);
   // API 狀態由 GAS 的台灣時間判定；只有離線 fallback 才使用瀏覽器時間估算。
   if (!nextPortal.version) refreshPortalStatuses(nextPortal);
   if (TESTING_MODE) applyTestingMode(nextPortal);
@@ -123,6 +124,24 @@ function applyPortalData(portal, preserveSelection = false) {
   renderWeekTabs();
   renderWeekDetail();
   renderTutoring();
+}
+
+function ensureScoringWindows(portal) {
+  portal.weeks.forEach((week) => {
+    if (week.tutoring?.startAt && !week.tutoring.deadlineAt) {
+      week.tutoring.deadlineAt = deadlineAfterSevenDays(week.tutoring.startAt);
+    }
+    if (week.vocabulary?.releaseAt && !week.vocabulary.deadlineAt) {
+      week.vocabulary.deadlineAt = deadlineAfterSevenDays(week.vocabulary.releaseAt);
+    }
+  });
+}
+
+function deadlineAfterSevenDays(value) {
+  const [year, month, day] = String(value).slice(0, 10).split('-').map(Number);
+  if (![year, month, day].every(Number.isFinite)) return '';
+  const deadline = new Date(Date.UTC(year, month - 1, day + 6));
+  return `${deadline.toISOString().slice(0, 10)}T23:59:59+08:00`;
 }
 
 function createFallbackPortal() {
@@ -142,8 +161,8 @@ function createFallbackPortal() {
       week: index + 1,
       grammar: courseTask('grammar', week.grammar),
       listening: courseTask('listening', week.listening),
-      tutoring: { no: week.tutoring[0], startAt: week.tutoring[1], meetUrl: '' },
-      vocabulary: { unit: week.vocabulary, status: 'available' }
+      tutoring: { no: week.tutoring[0], startAt: week.tutoring[1], deadlineAt: week.tutoring[2], meetUrl: '' },
+      vocabulary: { unit: week.vocabulary[0], releaseAt: week.vocabulary[1], deadlineAt: week.vocabulary[2], status: 'available' }
     }))
   };
 }
@@ -177,13 +196,17 @@ function renderCurrentWeek() {
   const currentWeek = state.portal.currentWeek;
   if (TESTING_MODE) {
     el['weekly-subtitle'].textContent = `Demo 模式：正在預覽第 ${currentWeek} 週，所有操作都不會寫入後台。`;
-  } else if (currentWeek === 0) {
-    el['weekly-subtitle'].textContent = '目前是開課前準備期；文法與單字已可先行練習。';
+    const week = state.portal.weeks[(currentWeek || 1) - 1];
+    el['current-week-tasks'].innerHTML = renderWeekTasks(week);
   } else {
-    el['weekly-subtitle'].textContent = `目前為課程第 ${currentWeek} 週，文法與單字可自由往後練習。`;
+    const upcomingTasks = getUpcomingDeadlineTasks();
+    el['weekly-subtitle'].textContent = upcomingTasks.length
+      ? `接下來七天內有 ${upcomingTasks.length} 個活動即將截止計點。`
+      : '接下來七天內沒有即將截止計點的活動。';
+    el['current-week-tasks'].innerHTML = upcomingTasks.length
+      ? renderTaskItems(upcomingTasks)
+      : '<p class="empty-state">目前沒有進入七天截止提醒的活動。</p>';
   }
-  const week = state.portal.weeks[(currentWeek || 1) - 1];
-  el['current-week-tasks'].innerHTML = renderWeekTasks(week);
 }
 
 function renderWeekTabs() {
@@ -206,11 +229,37 @@ function renderWeekDetail() {
 }
 
 function renderWeekTasks(week) {
-  const tasks = [courseTaskCard(week.grammar)];
-  if (week.listening) tasks.push(courseTaskCard(week.listening));
-  tasks.push(tutoringTaskCard(week.tutoring));
-  tasks.push(vocabularyTaskCard(week.vocabulary));
-  return tasks.join('');
+  return renderTaskItems(getWeekTaskItems(week));
+}
+
+function getWeekTaskItems(week) {
+  const tasks = [
+    { startAt: week.grammar.releaseAt, deadlineAt: week.grammar.deadlineAt, render: () => courseTaskCard(week.grammar) },
+    { startAt: week.tutoring.startAt, deadlineAt: week.tutoring.deadlineAt, render: () => tutoringTaskCard(week.tutoring) },
+    { startAt: week.vocabulary.releaseAt, deadlineAt: week.vocabulary.deadlineAt, render: () => vocabularyTaskCard(week.vocabulary) }
+  ];
+  if (week.listening) {
+    tasks.push({ startAt: week.listening.releaseAt, deadlineAt: week.listening.deadlineAt, render: () => courseTaskCard(week.listening) });
+  }
+  return tasks;
+}
+
+function renderTaskItems(tasks) {
+  return [...tasks]
+    .sort((a, b) => new Date(a.startAt) - new Date(b.startAt))
+    .map((task) => task.render())
+    .join('');
+}
+
+function getUpcomingDeadlineTasks() {
+  const now = new Date(state.portal.generatedAt || Date.now());
+  const cutoff = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  return state.portal.weeks
+    .flatMap(getWeekTaskItems)
+    .filter((task) => {
+      const deadline = new Date(task.deadlineAt);
+      return !Number.isNaN(deadline.getTime()) && deadline >= now && deadline <= cutoff;
+    });
 }
 
 function courseTaskCard(task) {
@@ -222,10 +271,10 @@ function courseTaskCard(task) {
   const listeningLabel = task.status === 'closed' ? '回報已截止' : task.status === 'upcoming' ? '尚未開放' : '驗證資格／完成回報';
   return `
     <article class="task-card ${escapeHtml(task.type)}">
-      <div class="task-topline"><h3>${title}</h3>${statusChip(task.status, isGrammar)}</div>
+      <div class="task-topline"><h3>${title}</h3></div>
       <p>${isGrammar ? '文法測驗八回皆可作答；期限內提交才會計點。' : '有購買聽力課的學員，驗證資格後可觀看及回報。'}</p>
       <div class="task-date-list">
-        <span><b>建議開始</b><time>${formatDate(task.releaseAt)}</time></span>
+        <span><b>${isGrammar ? '計點開始' : '建議開始'}</b><time>${formatDate(task.releaseAt)}</time></span>
         <span><b>計點截止</b><time>${formatDateTime(task.deadlineAt)}</time></span>
       </div>
       <div class="task-actions">
@@ -241,9 +290,12 @@ function tutoringTaskCard(task) {
   const canEnter = task.status === 'available' && task.meetUrl;
   return `
     <article class="task-card tutoring">
-      <div class="task-topline"><h3>補習日第 ${task.no} 次</h3>${statusChip(task.status)}</div>
+      <div class="task-topline"><h3>補習日第 ${task.no} 次</h3></div>
       <p>每週三直播複習，由助教直接點名，不需自行回報。</p>
-      <div class="task-date-list"><span><b>直播時間</b><time>${formatDateTime(task.startAt)}</time></span></div>
+      <div class="task-date-list">
+        <span><b>計點開始</b><time>${formatDateTime(task.startAt)}</time></span>
+        <span><b>計點截止</b><time>${formatDateTime(task.deadlineAt)}</time></span>
+      </div>
       <div class="task-actions">
         ${canEnter
           ? `<a class="button button-small button-secondary" href="${escapeAttribute(task.meetUrl)}" target="_blank" rel="noopener noreferrer">前往直播</a>`
@@ -257,9 +309,12 @@ function vocabularyTaskCard(task) {
   const demoSuffix = TESTING_MODE ? '&testing=1' : '';
   return `
     <article class="task-card vocabulary">
-      <div class="task-topline"><h3>補充單字第 ${task.unit} 回</h3><span class="status-chip available">全部開放</span></div>
+      <div class="task-topline"><h3>補充單字第 ${task.unit} 回</h3></div>
       <p>N1 單字字卡與小測驗，可提前練習後面的回次。</p>
-      <div class="task-date-list"><span><b>安排方式</b><span>自由練習</span></span></div>
+      <div class="task-date-list">
+        <span><b>計點開始</b><time>${formatDate(task.releaseAt)}</time></span>
+        <span><b>計點截止</b><time>${formatDateTime(task.deadlineAt)}</time></span>
+      </div>
       <div class="task-actions"><a class="button button-small button-primary" href="vocabulary.html?unit=${task.unit}${demoSuffix}" target="_blank" rel="noopener noreferrer">單字＋測驗</a></div>
     </article>
   `;
@@ -270,7 +325,7 @@ function renderTutoring() {
     const canEnter = tutoring.status === 'available' && tutoring.meetUrl;
     return `
       <article class="compact-card">
-        <div class="compact-card-top"><span class="unit-number">${tutoring.no}</span>${statusChip(tutoring.status)}</div>
+        <div class="compact-card-top"><span class="unit-number">${tutoring.no}</span></div>
         <h3>補習日 ${tutoring.no}</h3>
         <p>${formatDateTime(tutoring.startAt)}</p>
         ${canEnter
@@ -363,19 +418,6 @@ function normalizeStudentIdText(value) {
 function normalizeStudentId(value) {
   const normalized = normalizeStudentIdText(value);
   return /^N1\d{3}$/.test(normalized) ? normalized : '';
-}
-
-function statusChip(status, isGrammar = false) {
-  const labels = {
-    open: '本週計點',
-    upcoming: isGrammar ? '可提前練習' : '尚未開放',
-    closed: isGrammar ? '逾期不計點' : '已截止',
-    available: '連結已公布',
-    link_pending: '連結待公布',
-    ended: '已結束',
-    config_missing: '資料待設定'
-  };
-  return `<span class="status-chip ${escapeAttribute(status)}">${labels[status] || '待確認'}</span>`;
 }
 
 function formatDate(value) {
