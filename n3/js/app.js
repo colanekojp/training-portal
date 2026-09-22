@@ -195,25 +195,15 @@ function renderCurrentWeek() {
     el['weekly-subtitle'].textContent = `Demo 模式：正在預覽第 ${currentWeek} 週，所有操作都不會寫入後台。`;
     const week = state.portal.weeks[(currentWeek || 1) - 1];
     el['current-week-tasks'].innerHTML = renderWeekTasks(week);
-  } else if (shouldShowFirstWeekPreview()) {
-    el['weekly-subtitle'].textContent = '9/23 開學典禮後可先查看第一週完整安排；活動依計點開始時間排序。';
-    el['current-week-tasks'].innerHTML = renderWeekTasks(state.portal.weeks[0]);
   } else {
-    const upcomingTasks = getUpcomingDeadlineTasks();
-    el['weekly-subtitle'].textContent = upcomingTasks.length
-      ? `接下來七天內有 ${upcomingTasks.length} 個活動即將截止計點。`
-      : '接下來七天內沒有即將截止計點的活動。';
-    el['current-week-tasks'].innerHTML = upcomingTasks.length
-      ? renderTaskItems(upcomingTasks)
-      : '<p class="empty-state">目前沒有進入七天截止提醒的活動。</p>';
+    const scoringTasks = getFourteenDayScoringTasks();
+    el['weekly-subtitle'].textContent = scoringTasks.length
+      ? `未來 14 天有 ${scoringTasks.length} 個進行中或即將開始的計點活動。`
+      : '未來 14 天沒有進行中或即將開始的計點活動。';
+    el['current-week-tasks'].innerHTML = scoringTasks.length
+      ? renderTaskItems(scoringTasks)
+      : '<p class="empty-state">目前沒有進入未來 14 天計點提醒的活動。</p>';
   }
-}
-
-function shouldShowFirstWeekPreview() {
-  const now = new Date(state.portal.generatedAt || Date.now());
-  const openingCeremonyAt = new Date('2026-09-23T00:00:00+08:00');
-  const firstScoringAt = new Date(state.portal.weeks[0]?.grammar?.releaseAt || '');
-  return !Number.isNaN(firstScoringAt.getTime()) && now >= openingCeremonyAt && now < firstScoringAt;
 }
 
 function renderWeekTabs() {
@@ -258,14 +248,15 @@ function renderTaskItems(tasks) {
     .join('');
 }
 
-function getUpcomingDeadlineTasks() {
+function getFourteenDayScoringTasks() {
   const now = new Date(state.portal.generatedAt || Date.now());
-  const cutoff = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const cutoff = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
   return state.portal.weeks
     .flatMap(getWeekTaskItems)
     .filter((task) => {
+      const start = task.startAt ? new Date(task.startAt) : null;
       const deadline = task.deadlineAt ? new Date(task.deadlineAt) : null;
-      return deadline && !Number.isNaN(deadline.getTime()) && deadline >= now && deadline <= cutoff;
+      return start && deadline && !Number.isNaN(start.getTime()) && !Number.isNaN(deadline.getTime()) && start <= cutoff && deadline >= now;
     });
 }
 
