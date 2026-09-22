@@ -466,7 +466,7 @@ function showResult(data, message) {
     <aside class="grammar-course-cta">
       <strong>想知道每一題為什麼這樣選嗎？</strong>
       <p>完整文法觀念與題目詳解，都在王可樂日語的文法錄播課。現在就到官網，把答錯的地方真正學會！</p>
-      <a class="button button-primary" href="${COURSE_URL}" target="_blank" rel="noopener noreferrer">前往官網看完整詳解</a>
+      <a class="button button-primary" href="${COURSE_URL}" target="_blank" rel="noopener noreferrer">前往官網看課程</a>
     </aside>
     <div class="grammar-result-actions">
       <a class="button button-secondary" href="index.html">返回 N2 學習專區</a>
