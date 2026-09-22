@@ -264,20 +264,19 @@ function courseTaskCard(task) {
   const title = `${isGrammar ? '文法' : '聽力'}第 ${task.no} 堂`;
   const grammarLabel = task.status === 'closed' ? '練習（不計點）' : task.status === 'upcoming' ? '文法測驗' : '開始本回測驗';
   const grammarHref = `grammar.html?round=${task.no}${TESTING_MODE ? '&testing=1' : ''}`;
-  const listeningDisabled = task.status !== 'open';
-  const listeningLabel = task.status === 'closed' ? '回報已截止' : task.status === 'upcoming' ? '尚未開放' : '驗證資格／完成回報';
+  const listeningAction = `<a class="button button-small button-secondary" href="${COURSE_URL}" target="_blank" rel="noopener noreferrer">前往官網看課</a><button class="button button-small button-primary" type="button" data-listening-access="${task.no}">看完回報</button>`;
   return `
     <article class="task-card ${escapeHtml(task.type)}">
       <div class="task-topline"><h3>${title}</h3></div>
       <p>${isGrammar ? '文法測驗八回皆可作答；期限內提交才會計點。' : '有購買聽力課的學員，驗證資格後可觀看及回報。'}</p>
       <div class="task-date-list">
-        <span><b>${isGrammar ? '計點開始' : '建議開始'}</b><time>${formatDate(task.releaseAt)}</time></span>
+        <span><b>計點開始</b><time>${formatDate(task.releaseAt)}</time></span>
         <span><b>計點截止</b><time>${formatDateTime(task.deadlineAt)}</time></span>
       </div>
       <div class="task-actions">
         ${isGrammar
           ? `<a class="button button-small button-secondary" href="${COURSE_URL}" target="_blank" rel="noopener noreferrer">前往官網看課</a><a class="button button-small button-primary" href="${grammarHref}">${grammarLabel}</a>`
-          : `<button class="button button-small button-primary" type="button" data-listening-access="${task.no}" ${listeningDisabled ? 'disabled' : ''}>${listeningLabel}</button>`}
+          : listeningAction}
       </div>
     </article>
   `;
@@ -337,7 +336,7 @@ function handleActionClick(event) {
 
 function openListeningDialog(taskNo) {
   el['listening-dialog-title'].textContent = `聽力第 ${taskNo} 堂`;
-  el['listening-task-description'].textContent = '請先輸入 N1 學員編號驗證聽力課資格。看完課程後，可在同一視窗完成回報。';
+  el['listening-task-description'].textContent = '請輸入 N1 學員編號驗證聽力課資格。可提前回報；超過計點截止後仍可送出，但不計點。';
   el['listening-task-no'].value = String(taskNo);
   el['listening-student-id'].value = '';
   el['listening-student-id'].readOnly = false;
@@ -372,7 +371,7 @@ async function submitListeningForm(event) {
       el['listening-access-panel'].hidden = false;
       el['listening-student-id'].readOnly = true;
       el['listening-submit'].textContent = '我已看完，完成回報';
-      setListeningMessage(TESTING_MODE ? 'Demo 資格驗證成功；不會寫入資料。' : '資格驗證成功，請前往官網觀看課程。', 'success');
+      setListeningMessage(TESTING_MODE ? 'Demo 資格驗證成功；不會寫入資料。' : '資格驗證成功，請勾選確認已看完，再送出回報。', 'success');
     } catch (error) {
       setListeningMessage(error.message, 'error');
     } finally {
