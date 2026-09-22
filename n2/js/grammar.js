@@ -125,7 +125,7 @@ async function loadGrammarTest() {
 }
 
 async function loadDemoGrammarTest(round) {
-  const response = await fetch('assets/n2-grammar-demo.json?v=20260922-5');
+  const response = await fetch('assets/n2-grammar-demo.json?v=20260922-6');
   if (!response.ok) throw new Error('Demo 題庫載入失敗。');
   const payload = await response.json();
   const data = payload.units?.find((unit) => Number(unit.unit) === round);
@@ -178,6 +178,10 @@ function renderGrammarTest() {
   el['grammar-sections'].innerHTML = sectionNumbers.map((sectionNo) => {
     const contents = data.contents.filter((item) => Number(item.section_no) === sectionNo);
     const questions = data.questions.filter((item) => Number(item.section_no) === sectionNo);
+    const clozeQuestionNumbers = questions
+      .filter((item) => item.question_type === 'passage_cloze')
+      .map((item) => Number(item.question_no))
+      .filter(Number.isFinite);
     return `
       <section class="grammar-section" aria-labelledby="section-${sectionNo}-title">
         <div class="grammar-section-heading">
@@ -185,21 +189,43 @@ function renderGrammarTest() {
           <small>${questions.length} 題</small>
         </div>
         <h2 class="sr-only" id="section-${sectionNo}-title">問題 ${sectionNo}</h2>
-        <div class="grammar-reading">${contents.map(renderContentBlock).join('')}</div>
+        <div class="grammar-reading">${contents.map((item) => renderContentBlock(item, clozeQuestionNumbers)).join('')}</div>
         <div class="grammar-question-list">${questions.map(renderQuestion).join('')}</div>
       </section>
     `;
   }).join('');
 }
 
-function renderContentBlock(item) {
+function renderContentBlock(item, clozeQuestionNumbers = []) {
   if (item.content_type === 'instruction') {
-    return `<p class="grammar-instruction" lang="ja">${renderMultiline(item.content)}</p>`;
+    return `<p class="grammar-instruction" lang="ja">${renderPassageQuestionNumbers(item.content, clozeQuestionNumbers, true)}</p>`;
   }
   if (item.content_type === 'table_json') {
     return renderTableContent(item.content);
   }
-  return `<div class="grammar-passage" lang="ja">${renderMultiline(item.content)}</div>`;
+  return `<div class="grammar-passage" lang="ja">${renderPassageQuestionNumbers(item.content, clozeQuestionNumbers)}</div>`;
+}
+
+function renderPassageQuestionNumbers(value, questionNumbers, allowInline = false) {
+  const numbers = [...new Set(questionNumbers.map(Number).filter(Number.isFinite))]
+    .sort((a, b) => String(b).length - String(a).length);
+  if (!numbers.length) return renderMultiline(value);
+
+  const input = String(value ?? '');
+  const prefixPattern = allowInline ? '(^|[^0-9])' : '(^|[^0-9.])';
+  const suffixPattern = allowInline ? '(?![0-9])' : '(?![0-9]|年前|カ月)';
+  const pattern = new RegExp(`${prefixPattern}((?:${numbers.join('|')})(?:-[a-z])?)${suffixPattern}`, 'gim');
+  let output = '';
+  let lastIndex = 0;
+  input.replace(pattern, (match, prefix, label, offset) => {
+    const labelIndex = offset + prefix.length;
+    output += renderMultiline(input.slice(lastIndex, labelIndex));
+    output += `<span class="passage-question-number" aria-label="題號 ${escapeAttribute(label)}">${escapeHtml(label)}</span>`;
+    lastIndex = labelIndex + label.length;
+    return match;
+  });
+  output += renderMultiline(input.slice(lastIndex));
+  return output;
 }
 
 function renderTableContent(value) {
@@ -244,11 +270,12 @@ function renderQuestionPrompt(question) {
 function renderQuestion(question, index) {
   const options = [question.option_1, question.option_2, question.option_3, question.option_4];
   const labels = ['1', '2', '3', '4'];
+  const hidePrompt = question.question_type === 'passage_cloze';
   return `
     <fieldset class="grammar-question" id="question-${escapeAttribute(question.question_id)}" data-question-id="${escapeAttribute(question.question_id)}">
-      <legend>
+      <legend${hidePrompt ? ` aria-label="第 ${question.question_no || index + 1} 題"` : ''}>
         <span class="grammar-question-number">${question.question_no || index + 1}</span>
-        <span lang="ja">${renderQuestionPrompt(question)}</span>
+        ${hidePrompt ? '' : `<span lang="ja">${renderQuestionPrompt(question)}</span>`}
       </legend>
       <div class="grammar-options">
         ${options.map((option, optionIndex) => `

@@ -1474,6 +1474,26 @@ input:focus-visible,
   line-height: 2;
 }
 
+.passage-question-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2em;
+  min-height: 1.75em;
+  margin: 0 0.14em;
+  padding: 0.05em 0.32em;
+  color: var(--brand-white);
+  background: var(--brand-orange);
+  border: 2px solid #d94320;
+  border-radius: 5px;
+  box-shadow: 0 2px 0 rgba(119, 46, 25, 0.16);
+  font-family: Roboto, sans-serif;
+  font-weight: 800;
+  line-height: 1.2;
+  vertical-align: 0.06em;
+  white-space: nowrap;
+}
+
 .grammar-table-wrap {
   overflow-x: auto;
   background: var(--brand-white);
