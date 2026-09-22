@@ -1,4 +1,5 @@
 const API_URL = window.PORTAL_CONFIG.API_URL;
+const COURSE_URL = 'https://colanekojp.com.tw/member_course/';
 const LEARNING_CACHE_MAX_AGE = 10 * 60 * 1000;
 const PAGE_PARAMS = new URLSearchParams(window.location.search);
 const TESTING_MODE = window.PORTAL_CONFIG.DEMO_MODE_ENABLED && PAGE_PARAMS.get('testing') === '1';
@@ -247,7 +248,7 @@ function renderQuestions() {
   el['quiz-questions'].innerHTML = state.questions.map((question, index) => {
     const options = [question.option_a, question.option_b, question.option_c, question.option_d];
     return `
-      <fieldset class="quiz-question">
+      <fieldset class="quiz-question" data-question-id="${escapeHtml(question.question_id)}">
         <legend><span class="section-kicker">第 ${index + 1} 題</span><br><span lang="ja">${escapeHtml(question.question)}</span></legend>
         <div class="quiz-options">
           ${options.map((option, optionIndex) => `
@@ -285,19 +286,62 @@ async function submitQuiz(event) {
     }
     const result = await apiPost({ action: 'submit_quiz', level: 'N1', student_id: studentId, unit: state.unit, answers });
     const data = result.data;
+    const questionResults = Array.isArray(data.questionResults) ? data.questionResults : [];
+    const wrongCount = Number(data.totalCount) - Number(data.correctCount);
+    applyQuizFeedback(questionResults);
     el['quiz-result'].innerHTML = `
-      <span>第 ${state.unit} 回測驗結果</span>
+      <span class="result-kicker">第 ${state.unit} 回測驗完成</span>
       <strong>${data.correctCount} / ${data.totalCount}</strong>
-      <p>答對率 ${data.accuracyPercent}%${data.wrongQuestionIds.length ? `・錯題：${data.wrongQuestionIds.map(escapeHtml).join('、')}` : '・全部答對！'}</p>`;
+      <p>答對率 ${data.accuracyPercent}%</p>
+      ${wrongCount ? `<p class="result-note">答對 ${data.correctCount} 題、答錯 ${wrongCount} 題。畫面已用顏色標示你的答案與正確答案，可往上逐題檢視。</p>` : '<p class="result-note">全部答對，做得很好！每一題都已用綠色標示。</p>'}
+      <aside class="grammar-course-cta">
+        <strong>想把單字記得更熟、用得更準嗎？</strong>
+        <p>回到王可樂日語課程繼續複習，把今天答錯的單字真正變成你的實力！</p>
+        <a class="button button-primary" href="${COURSE_URL}" target="_blank" rel="noopener noreferrer">前往官網看課程</a>
+      </aside>`;
     el['quiz-result'].hidden = false;
+    el['quiz-questions'].querySelectorAll('input').forEach((input) => { input.disabled = true; });
     el['quiz-result'].scrollIntoView({ behavior: 'smooth', block: 'center' });
     setMessage(el['quiz-message'], '測驗結果已記錄。', 'success');
     showToast('測驗結果已記錄');
   } catch (error) {
     setMessage(el['quiz-message'], error.message, 'error');
   } finally {
-    setButtonLoading(el['quiz-submit'], false, '提交測驗');
+    if (el['quiz-result'].hidden) {
+      setButtonLoading(el['quiz-submit'], false, '提交測驗');
+    } else {
+      el['quiz-submit'].disabled = true;
+      el['quiz-submit'].textContent = '本次測驗已提交';
+    }
   }
+}
+
+function applyQuizFeedback(results) {
+  const byId = new Map(results.map((item) => [item.questionId, item]));
+  state.questions.forEach((question) => {
+    const result = byId.get(question.question_id);
+    const card = document.querySelector(`[data-question-id="${cssEscape(question.question_id)}"]`);
+    if (!card || !result) return;
+    const selectedOption = Number(result.selectedOption);
+    const correctOption = Number(result.correctOption);
+    const isCorrect = Boolean(result.isCorrect);
+    card.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
+    card.querySelectorAll('.quiz-option').forEach((option, index) => {
+      const optionNo = index + 1;
+      if (optionNo === correctOption) option.classList.add('is-answer-correct');
+      if (optionNo === selectedOption && optionNo !== correctOption) option.classList.add('is-answer-wrong');
+    });
+    const options = [question.option_a, question.option_b, question.option_c, question.option_d];
+    const selectedText = options[selectedOption - 1] || '';
+    const correctText = options[correctOption - 1] || '';
+    card.insertAdjacentHTML('beforeend', `
+      <div class="quiz-question-feedback ${isCorrect ? 'is-correct' : 'is-wrong'}" aria-live="polite">
+        <strong>${isCorrect ? '答對了' : '這題答錯了'}</strong>
+        <span>你的答案：${selectedOption}. ${escapeHtml(selectedText)}</span>
+        <span>正確答案：${correctOption}. ${escapeHtml(correctText)}</span>
+      </div>
+    `);
+  });
 }
 
 function normalizeStudentId(value) {
