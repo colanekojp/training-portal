@@ -262,7 +262,7 @@ function getUpcomingDeadlineTasks() {
 function courseTaskCard(task) {
   const isGrammar = task.type === 'grammar';
   const title = `${isGrammar ? '文法' : '聽力'}第 ${task.no} 堂`;
-  const grammarLabel = task.status === 'closed' ? '練習（不計點）' : task.status === 'upcoming' ? '可提前作答' : '開始本回測驗';
+  const grammarLabel = task.status === 'closed' ? '練習（不計點）' : task.status === 'upcoming' ? '文法測驗' : '開始本回測驗';
   const grammarHref = `grammar.html?round=${task.no}${TESTING_MODE ? '&testing=1' : ''}`;
   const listeningDisabled = task.status !== 'open';
   const listeningLabel = task.status === 'closed' ? '回報已截止' : task.status === 'upcoming' ? '尚未開放' : '驗證資格／完成回報';
