@@ -770,6 +770,14 @@ input:focus-visible,
   gap: 14px;
 }
 
+.tutoring-live-note { display: flex; align-items: center; gap: 14px; margin: -12px 0 26px; padding: 16px 18px; background: linear-gradient(135deg, #f4f9ff, #fff); border: 1px solid rgba(66, 129, 190, 0.25); border-radius: 16px; box-shadow: 0 10px 28px rgba(40, 91, 144, 0.08); }
+.tutoring-live-note-icon { flex: 0 0 auto; padding: 6px 10px; color: #fff; background: var(--brand-blue); border-radius: 999px; font-family: "Roboto", sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+.tutoring-live-note strong { color: var(--brand-brown); font-size: 15px; }
+.tutoring-live-note p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.course-calendar-card { margin: 0; overflow: hidden; background: #fff; border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+.course-calendar-card img { display: block; width: 100%; height: auto; }
+.course-calendar-card figcaption { padding: 14px 18px; color: var(--muted); font-size: 13px; text-align: center; }
+
 .compact-card {
   padding: 18px;
 }
@@ -1879,6 +1887,12 @@ input:focus-visible,
   .unit-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .tutoring-live-note { align-items: flex-start; }
+  .course-calendar-card { overflow-x: auto; }
+  .course-calendar-card img,
+  .course-calendar-card figcaption { min-width: 720px; }
+  .course-calendar-card figcaption { text-align: left; }
 
   .task-grid {
     grid-template-columns: 1fr;

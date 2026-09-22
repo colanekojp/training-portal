@@ -128,16 +128,17 @@ function applyPortalData(portal, preserveSelection = false) {
 
 function ensureScoringWindows(portal) {
   portal.weeks.forEach((week) => {
-    if (week.vocabulary?.releaseAt && !week.vocabulary.deadlineAt) {
-      week.vocabulary.deadlineAt = deadlineAfterSevenDays(week.vocabulary.releaseAt);
-    }
+    [week.grammar, week.listening].filter(Boolean).forEach((task) => {
+      task.deadlineAt = deadlineAfterFourteenDays(task.releaseAt);
+    });
+    if (week.vocabulary?.releaseAt) week.vocabulary.deadlineAt = deadlineAfterFourteenDays(week.vocabulary.releaseAt);
   });
 }
 
-function deadlineAfterSevenDays(value) {
+function deadlineAfterFourteenDays(value) {
   const [year, month, day] = String(value).slice(0, 10).split('-').map(Number);
   if (![year, month, day].every(Number.isFinite)) return '';
-  const deadline = new Date(Date.UTC(year, month - 1, day + 6));
+  const deadline = new Date(Date.UTC(year, month - 1, day + 13));
   return `${deadline.toISOString().slice(0, 10)}T23:59:59+08:00`;
 }
 
@@ -171,10 +172,13 @@ function refreshPortalStatuses(portal) {
       task.status = now < new Date(task.releaseAt) ? 'upcoming' : now > new Date(task.deadlineAt) ? 'closed' : 'open';
     });
     const tutoringStart = new Date(week.tutoring.startAt);
-    const tutoringEnd = new Date(tutoringStart.getTime() + 120 * 60 * 1000);
+    const todayKey = taipeiDateKey(now);
+    const tutoringDayKey = taipeiDateKey(tutoringStart);
     week.tutoring.status = Number.isNaN(tutoringStart.getTime())
       ? 'config_missing'
-      : now > tutoringEnd ? 'ended' : week.tutoring.meetUrl ? 'available' : 'link_pending';
+      : todayKey < tutoringDayKey ? 'scheduled'
+        : todayKey > tutoringDayKey ? 'ended'
+          : week.tutoring.meetUrl ? 'available' : 'link_pending';
     week.vocabulary.status = 'available';
   });
   const firstStart = new Date(portal.weeks[0].grammar.releaseAt);
@@ -196,13 +200,13 @@ function renderCurrentWeek() {
     const week = state.portal.weeks[(currentWeek || 1) - 1];
     el['current-week-tasks'].innerHTML = renderWeekTasks(week);
   } else {
-    const scoringTasks = getFourteenDayScoringTasks();
-    el['weekly-subtitle'].textContent = scoringTasks.length
-      ? `未來 14 天有 ${scoringTasks.length} 個進行中或即將開始的計點活動。`
-      : '未來 14 天沒有進行中或即將開始的計點活動。';
-    el['current-week-tasks'].innerHTML = scoringTasks.length
-      ? renderTaskItems(scoringTasks)
-      : '<p class="empty-state">目前沒有進入未來 14 天計點提醒的活動。</p>';
+    const nearbyTasks = getNearbyActivityTasks();
+    el['weekly-subtitle'].textContent = nearbyTasks.length
+      ? `今天前後 14 天共有 ${nearbyTasks.length} 個課程或直播活動。`
+      : '今天前後 14 天沒有課程或直播活動。';
+    el['current-week-tasks'].innerHTML = nearbyTasks.length
+      ? renderTaskItems(nearbyTasks)
+      : '<p class="empty-state">目前沒有進入前後 14 天範圍的活動。</p>';
   }
 }
 
@@ -248,16 +252,27 @@ function renderTaskItems(tasks) {
     .join('');
 }
 
-function getFourteenDayScoringTasks() {
+function getNearbyActivityTasks() {
   const now = new Date(state.portal.generatedAt || Date.now());
-  const cutoff = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const windowStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const windowEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
   return state.portal.weeks
     .flatMap(getWeekTaskItems)
     .filter((task) => {
       const start = task.startAt ? new Date(task.startAt) : null;
-      const deadline = task.deadlineAt ? new Date(task.deadlineAt) : null;
-      return start && deadline && !Number.isNaN(start.getTime()) && !Number.isNaN(deadline.getTime()) && start <= cutoff && deadline >= now;
+      return start && !Number.isNaN(start.getTime()) && start >= windowStart && start <= windowEnd;
     });
+}
+
+function taipeiDateKey(value) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Taipei',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date(value));
+  const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${byType.year}-${byType.month}-${byType.day}`;
 }
 
 function courseTaskCard(task) {
@@ -293,7 +308,7 @@ function tutoringTaskCard(task) {
       <div class="task-actions">
         ${canEnter
           ? `<a class="button button-small button-secondary" href="${escapeAttribute(task.meetUrl)}" target="_blank" rel="noopener noreferrer">前往直播</a>`
-          : `<button class="button button-small button-outline" type="button" disabled>${task.status === 'ended' ? '本次補習已結束' : '直播連結待公布'}</button>`}
+          : `<button class="button button-small button-outline" type="button" disabled>${tutoringButtonLabel(task, true)}</button>`}
       </div>
     </article>
   `;
@@ -324,10 +339,17 @@ function renderTutoring() {
         <p>${formatDateTime(tutoring.startAt)}</p>
         ${canEnter
           ? `<a class="button button-small button-secondary" href="${escapeAttribute(tutoring.meetUrl)}" target="_blank" rel="noopener noreferrer">前往直播</a>`
-          : `<button class="button button-small button-outline" type="button" disabled>${tutoring.status === 'ended' ? '直播已結束' : '連結待公布'}</button>`}
+          : `<button class="button button-small button-outline" type="button" disabled>${tutoringButtonLabel(tutoring, false)}</button>`}
       </article>
     `;
   }).join('');
+}
+
+function tutoringButtonLabel(task, detailed) {
+  if (task.status === 'ended') return detailed ? '本次補習已結束' : '直播已結束';
+  if (task.status === 'scheduled') return '直播當天開放';
+  if (task.status === 'link_pending') return '直播連結待公布';
+  return '直播資訊待確認';
 }
 
 function handleActionClick(event) {
