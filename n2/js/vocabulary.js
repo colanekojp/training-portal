@@ -24,12 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function cacheElements() {
   [
-    'testing-banner', 'unit-selector', 'page-loading', 'study-panel', 'study-title', 'show-quiz',
+    'testing-banner', 'unit-selector', 'page-loading', 'study-panel', 'study-title',
     'vocabulary-progress-text', 'vocabulary-progress-bar', 'flashcard',
     'flashcard-word', 'flashcard-reading', 'flashcard-meaning',
     'flashcard-example-ja', 'flashcard-example-zh', 'vocabulary-prev',
-    'vocabulary-next', 'vocabulary-student-id', 'complete-vocabulary',
-    'start-quiz', 'vocabulary-message', 'quiz-panel', 'quiz-title',
+    'vocabulary-next', 'start-quiz', 'quiz-panel', 'quiz-title',
     'back-to-study', 'quiz-loading', 'quiz-form', 'quiz-questions',
     'quiz-student-id', 'quiz-submit', 'quiz-message', 'quiz-result', 'toast'
   ].forEach((id) => { el[id] = document.getElementById(id); });
@@ -45,12 +44,10 @@ function bindEvents() {
   el.flashcard.addEventListener('click', () => el.flashcard.classList.toggle('is-flipped'));
   el['vocabulary-prev'].addEventListener('click', () => moveCard(-1));
   el['vocabulary-next'].addEventListener('click', () => moveCard(1));
-  el['complete-vocabulary'].addEventListener('click', completeVocabulary);
-  el['show-quiz'].addEventListener('click', showQuiz);
   el['start-quiz'].addEventListener('click', showQuiz);
   el['back-to-study'].addEventListener('click', showStudy);
   el['quiz-form'].addEventListener('submit', submitQuiz);
-  [el['vocabulary-student-id'], el['quiz-student-id']].forEach((input) => {
+  [el['quiz-student-id']].forEach((input) => {
     input.addEventListener('input', () => {
       input.value = input.value.toUpperCase().replace(/\s+/g, '');
     });
@@ -105,7 +102,6 @@ async function loadVocabulary() {
   el['page-loading'].textContent = `正在載入第 ${state.unit} 回單字……`;
   el['study-panel'].hidden = true;
   el['quiz-panel'].hidden = true;
-  setMessage(el['vocabulary-message'], '');
   const cachedItems = readLearningCache('vocabulary', state.unit);
   if (cachedItems?.length) {
     state.items = cachedItems;
@@ -152,37 +148,10 @@ function moveCard(step) {
   renderCard();
 }
 
-async function completeVocabulary() {
-  const studentId = normalizeStudentId(el['vocabulary-student-id'].value);
-  if (!studentId) return setMessage(el['vocabulary-message'], '請輸入正確的 N2 學員編號，例如 N2001。', 'error');
-  if (TESTING_MODE) {
-    setMessage(el['vocabulary-message'], 'Demo 登記完成；本次沒有寫入 Google Sheet。', 'success');
-    showToast('Demo 完成，沒有寫入後台');
-    return;
-  }
-  setButtonLoading(el['complete-vocabulary'], true, '登記中……');
-  setMessage(el['vocabulary-message'], '正在登記……');
-  try {
-    const result = await apiPost({
-      action: 'complete_vocabulary',
-      level: 'N2',
-      student_id: studentId,
-      unit: state.unit
-    });
-    setMessage(el['vocabulary-message'], result.message, 'success');
-    showToast(result.message);
-  } catch (error) {
-    setMessage(el['vocabulary-message'], error.message, 'error');
-  } finally {
-    setButtonLoading(el['complete-vocabulary'], false, '登記單字完成');
-  }
-}
-
 async function showQuiz() {
   el['quiz-panel'].hidden = false;
   el['study-panel'].hidden = true;
   el['quiz-title'].textContent = `第 ${state.unit} 回單字測驗`;
-  el['quiz-student-id'].value = el['vocabulary-student-id'].value;
   el['quiz-result'].hidden = true;
   setMessage(el['quiz-message'], '');
   if (state.questions.length) {
@@ -239,7 +208,6 @@ function showStudy() {
   el['quiz-panel'].hidden = true;
   el['study-panel'].hidden = !state.items.length;
   if (!state.items.length) el['page-loading'].hidden = false;
-  el['vocabulary-student-id'].value = el['quiz-student-id'].value;
 }
 
 function renderQuestions() {
@@ -283,7 +251,7 @@ async function submitQuiz(event) {
         <span>第 ${state.unit} 回 Demo 測驗完成</span>
         <p>正式模式會由 GAS 計分並保存作答；這次展示不計分，也不會寫入 Google Sheet。</p>`;
       el['quiz-result'].hidden = false;
-      setMessage(el['quiz-message'], 'Demo 流程完成。', 'success');
+      setMessage(el['quiz-message'], 'Demo 流程完成；正式模式會在完整交卷後積 1 點。', 'success');
       showToast('Demo 測驗完成，沒有寫入後台');
       return;
     }
@@ -296,17 +264,18 @@ async function submitQuiz(event) {
       <span class="result-kicker">第 ${state.unit} 回測驗完成</span>
       <strong>${data.correctCount} / ${data.totalCount}</strong>
       <p>答對率 ${data.accuracyPercent}%</p>
+      <p class="result-note">${escapeHtml(result.message)}</p>
       ${wrongCount ? `<p class="result-note">答對 ${data.correctCount} 題、答錯 ${wrongCount} 題。畫面已用顏色標示你的答案與正確答案，可往上逐題檢視。</p>` : '<p class="result-note">全部答對，做得很好！每一題都已用綠色標示。</p>'}`;
     el['quiz-result'].hidden = false;
     el['quiz-questions'].querySelectorAll('input').forEach((input) => { input.disabled = true; });
     el['quiz-result'].scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setMessage(el['quiz-message'], '測驗結果已記錄。', 'success');
-    showToast('測驗結果已記錄');
+    setMessage(el['quiz-message'], result.message, 'success');
+    showToast(result.message);
   } catch (error) {
     setMessage(el['quiz-message'], error.message, 'error');
   } finally {
     if (el['quiz-result'].hidden) {
-      setButtonLoading(el['quiz-submit'], false, '提交測驗');
+      setButtonLoading(el['quiz-submit'], false, '完成測驗並積點');
     } else {
       el['quiz-submit'].disabled = true;
       el['quiz-submit'].textContent = '本次測驗已提交';
