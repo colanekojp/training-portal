@@ -219,7 +219,7 @@ async function showQuiz() {
 
 function readLearningCache(type, unit) {
   try {
-    const cached = JSON.parse(localStorage.getItem(`n3-${type}-cache-v1-${unit}`));
+    const cached = JSON.parse(localStorage.getItem(`n3-${type}-cache-v2-${unit}`));
     if (!cached || Date.now() - Number(cached.savedAt) > LEARNING_CACHE_MAX_AGE) return null;
     return cached.data;
   } catch (error) {
@@ -229,7 +229,7 @@ function readLearningCache(type, unit) {
 
 function writeLearningCache(type, unit, data) {
   try {
-    localStorage.setItem(`n3-${type}-cache-v1-${unit}`, JSON.stringify({ savedAt: Date.now(), data }));
+    localStorage.setItem(`n3-${type}-cache-v2-${unit}`, JSON.stringify({ savedAt: Date.now(), data }));
   } catch (error) {
     // 瀏覽器停用儲存功能時，改由 API 正常讀取。
   }
@@ -245,15 +245,19 @@ function showStudy() {
 function renderQuestions() {
   const labels = ['①', '②', '③', '④'];
   el['quiz-questions'].innerHTML = state.questions.map((question, index) => {
-    const options = [question.option_a, question.option_b, question.option_c, question.option_d];
+    const optionFields = ['option_a', 'option_b', 'option_c', 'option_d'];
+    const options = optionFields.map((field) => ({
+      text: question[field],
+      underlineRanges: question.underlines?.[field]
+    }));
     return `
       <fieldset class="quiz-question" data-question-id="${escapeHtml(question.question_id)}">
-        <legend><span class="section-kicker">第 ${index + 1} 題</span><br><span lang="ja">${escapeHtml(question.question)}</span></legend>
+        <legend><span class="section-kicker">第 ${index + 1} 題</span><br><span lang="ja">${renderUnderlinedText(question.question, question.underlines?.question)}</span></legend>
         <div class="quiz-options">
           ${options.map((option, optionIndex) => `
             <label class="quiz-option">
               <input type="radio" name="${escapeHtml(question.question_id)}" value="${optionIndex + 1}">
-              <span><strong>${labels[optionIndex]}</strong> <span lang="ja">${escapeHtml(option)}</span></span>
+              <span><strong>${labels[optionIndex]}</strong> <span lang="ja">${renderUnderlinedText(option.text, option.underlineRanges)}</span></span>
             </label>
           `).join('')}
         </div>
@@ -326,13 +330,16 @@ function applyQuizFeedback(results) {
       if (optionNo === selectedOption && optionNo !== correctOption) option.classList.add('is-answer-wrong');
     });
     const options = [question.option_a, question.option_b, question.option_c, question.option_d];
+    const optionFields = ['option_a', 'option_b', 'option_c', 'option_d'];
     const selectedText = options[selectedOption - 1] || '';
     const correctText = options[correctOption - 1] || '';
+    const selectedRanges = question.underlines?.[optionFields[selectedOption - 1]];
+    const correctRanges = question.underlines?.[optionFields[correctOption - 1]];
     card.insertAdjacentHTML('beforeend', `
       <div class="quiz-question-feedback ${isCorrect ? 'is-correct' : 'is-wrong'}" aria-live="polite">
         <strong>${isCorrect ? '答對了' : '這題答錯了'}</strong>
-        <span>你的答案：${selectedOption}. ${escapeHtml(selectedText)}</span>
-        <span>正確答案：${correctOption}. ${escapeHtml(correctText)}</span>
+        <span>你的答案：${selectedOption}. ${renderUnderlinedText(selectedText, selectedRanges)}</span>
+        <span>正確答案：${correctOption}. ${renderUnderlinedText(correctText, correctRanges)}</span>
       </div>
     `);
   });
@@ -367,6 +374,29 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function renderUnderlinedText(value, ranges) {
+  const text = String(value ?? '');
+  if (!Array.isArray(ranges) || !ranges.length) return escapeHtml(text);
+
+  const safeRanges = ranges
+    .filter((range) => Array.isArray(range) && range.length === 2)
+    .map(([start, end]) => [Number(start), Number(end)])
+    .filter(([start, end]) => Number.isInteger(start) && Number.isInteger(end)
+      && start >= 0 && start < end && end <= text.length)
+    .sort((left, right) => left[0] - right[0]);
+
+  let cursor = 0;
+  let html = '';
+  safeRanges.forEach(([start, end]) => {
+    if (start < cursor) return;
+    html += escapeHtml(text.slice(cursor, start));
+    html += `<span class="quiz-underlined">${escapeHtml(text.slice(start, end))}</span>`;
+    cursor = end;
+  });
+  html += escapeHtml(text.slice(cursor));
+  return html;
 }
 
 function cssEscape(value) {
