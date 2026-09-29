@@ -4,6 +4,7 @@ const demoMode = !config.API_URL || params.get('demo') === '1';
 const filePreviewMode = window.location.protocol === 'file:';
 const roundCacheTtlMs = 4 * 60 * 1000;
 const state = {
+  level: normalizeLevel(params.get('level')),
   unit: normalizeUnit(params.get('round')),
   data: null,
   sort: 'wrong',
@@ -17,6 +18,7 @@ document.addEventListener('DOMContentLoaded', init);
 function init() {
   cacheElements();
   bindEvents();
+  renderLevelTabs();
   renderRoundTabs();
   el['preview-banner'].hidden = !demoMode;
   showDashboard();
@@ -29,7 +31,7 @@ function init() {
 
 function cacheElements() {
   [
-    'dashboard', 'preview-banner', 'round-tabs', 'loading-panel', 'error-panel',
+    'dashboard', 'preview-banner', 'level-tabs', 'round-tabs', 'loading-panel', 'error-panel',
     'dashboard-content', 'updated-at', 'refresh-button', 'status-pill', 'round-title',
     'round-note', 'participant-count', 'roster-summary', 'completion-rate',
     'question-count', 'sample-status', 'sample-detail', 'sort-select',
@@ -38,6 +40,11 @@ function cacheElements() {
 }
 
 function bindEvents() {
+  el['level-tabs'].addEventListener('click', (event) => {
+    const button = event.target.closest('[data-level]');
+    if (!button) return;
+    selectLevel(button.dataset.level);
+  });
   el['round-tabs'].addEventListener('click', (event) => {
     const button = event.target.closest('[data-unit]');
     if (!button) return;
@@ -55,6 +62,11 @@ function bindEvents() {
   el['refresh-button'].addEventListener('click', refreshStats);
 }
 
+function normalizeLevel(value) {
+  const level = String(value || config.DEFAULT_LEVEL || 'N1').trim().toUpperCase();
+  return config.LEVELS.includes(level) ? level : config.DEFAULT_LEVEL;
+}
+
 function showDashboard() {
   el.dashboard.hidden = false;
 }
@@ -62,6 +74,29 @@ function showDashboard() {
 function normalizeUnit(value) {
   const unit = Number(value);
   return Number.isInteger(unit) && unit >= 1 && unit <= 8 ? unit : 1;
+}
+
+function renderLevelTabs() {
+  el['level-tabs'].querySelectorAll('[data-level]').forEach((button) => {
+    const active = button.dataset.level === state.level;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+}
+
+function selectLevel(levelValue) {
+  const level = normalizeLevel(levelValue);
+  if (level === state.level) return;
+  state.level = level;
+  state.selectedQuestionId = '';
+  const url = new URL(window.location.href);
+  url.searchParams.set('level', level);
+  url.searchParams.set('round', String(state.unit));
+  history.replaceState(null, '', `${url.pathname}${url.search}`);
+  renderLevelTabs();
+  loadRound();
 }
 
 function renderRoundTabs() {
@@ -86,7 +121,9 @@ async function loadRound() {
   const requestId = ++state.requestId;
   setLoading(true);
   try {
-    const data = demoMode ? await loadDemoRound(state.unit) : await fetchLiveStats(state.unit);
+    const data = demoMode
+      ? await loadDemoRound(state.level, state.unit)
+      : await fetchLiveStats(state.level, state.unit);
     if (requestId !== state.requestId) return;
     state.data = data;
     state.selectedQuestionId = '';
@@ -98,21 +135,23 @@ async function loadRound() {
   }
 }
 
-async function loadDemoRound(unit) {
+async function loadDemoRound(level, unit) {
   const response = await fetch(config.DEMO_DATA_URL, { cache: 'no-store' });
   if (!response.ok) throw new Error('預覽資料載入失敗');
   const payload = await response.json();
-  const found = payload.units.find((item) => Number(item.unit) === unit);
-  if (found) return found;
+  const found = level === 'N1'
+    ? payload.units.find((item) => Number(item.unit) === unit)
+    : null;
+  if (found) return { ...found, level };
   return {
-    level: 'N1', unit, title: `N1 第 ${unit} 回文法測驗`, dataStatus: 'upcoming',
+    level, unit, title: `${level} 第 ${unit} 回文法測驗`, dataStatus: 'upcoming',
     rosterCount: 0, participantCount: 0, completedAttemptCount: 0, completionRate: 0,
     questionCount: 0, generatedAt: payload.generatedAt, questionStats: []
   };
 }
 
-async function fetchLiveStats(unit) {
-  const cacheKey = `teacher-dashboard-${config.LEVEL}-${unit}`;
+async function fetchLiveStats(level, unit) {
+  const cacheKey = `teacher-dashboard-${level}-${unit}`;
   try {
     const cached = JSON.parse(sessionStorage.getItem(cacheKey));
     if (cached && Date.now() - Number(cached.savedAt) < roundCacheTtlMs) {
@@ -124,7 +163,7 @@ async function fetchLiveStats(unit) {
 
   const data = await apiGet({
     action: 'teacher_grammar_stats',
-    level: config.LEVEL,
+    level,
     unit
   });
   try {
@@ -170,10 +209,10 @@ async function refreshStats() {
   el['refresh-button'].textContent = demoMode ? '重新載入中…' : '背景統計更新中…';
   try {
     if (!demoMode) {
-      await apiGet({ action: 'teacher_refresh_n1' }, 60000);
+      await apiGet({ action: 'teacher_refresh', level: state.level }, 60000);
       try {
         Object.keys(sessionStorage)
-          .filter((key) => key.startsWith(`teacher-dashboard-${config.LEVEL}-`))
+          .filter((key) => key.startsWith(`teacher-dashboard-${state.level}-`))
           .forEach((key) => sessionStorage.removeItem(key));
       } catch (_) {
         // 無儲存權限不影響統計更新。
@@ -190,7 +229,7 @@ async function refreshStats() {
 
 function setLoading(loading) {
   el['loading-panel'].hidden = !loading;
-  el['loading-panel'].textContent = `正在讀取第 ${state.unit} 回統計……`;
+  el['loading-panel'].textContent = `正在讀取 ${state.level} 第 ${state.unit} 回統計……`;
   el['error-panel'].hidden = true;
   if (loading) el['dashboard-content'].hidden = true;
 }
@@ -209,7 +248,8 @@ function renderDashboard() {
   el['updated-at'].textContent = data.generatedAt
     ? `統計更新：${formatDateTime(data.generatedAt)}`
     : '尚未產生統計時間';
-  el['round-title'].textContent = data.title || `N1 第 ${data.unit} 回文法測驗`;
+  el['round-title'].textContent = data.title || `${state.level} 第 ${data.unit} 回文法測驗`;
+  document.title = `${state.level} 老師檢閱｜JLPT 特訓班`;
   renderStatus(data);
   el['participant-count'].textContent = `${number(data.participantCount)} 人`;
   el['roster-summary'].textContent = data.rosterCount

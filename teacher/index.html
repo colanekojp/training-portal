@@ -6,14 +6,14 @@
     <meta name="description" content="JLPT 特訓班老師檢閱頁：查看各回文法測驗完成狀況與熱門錯題。">
     <meta name="robots" content="noindex,nofollow">
     <meta name="theme-color" content="#4a261d">
-    <title>N1 老師檢閱｜JLPT 特訓班</title>
+    <title>老師檢閱｜JLPT 特訓班</title>
     <link rel="icon" href="../favicon.ico" sizes="any">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css?v=20260929-1">
-    <script src="js/config.js?v=20260929-4"></script>
-    <script src="js/dashboard.js?v=20260929-4" defer></script>
+    <script src="js/config.js?v=20260929-5"></script>
+    <script src="js/dashboard.js?v=20260929-5" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">跳到統計內容</a>
@@ -33,7 +33,7 @@
     <main id="main-content">
       <section class="dashboard" id="dashboard" hidden>
         <div class="preview-banner" id="preview-banner" hidden>
-          目前為 N1 畫面預覽，使用 2026/09/29 的部分作答資料。接上獨立老師 API 後會自動更新。
+          目前為畫面預覽；N1 使用 2026/09/29 的部分作答資料，N2／N3 顯示空白狀態。
         </div>
 
         <div class="shell dashboard-shell">
@@ -49,10 +49,10 @@
             </div>
           </section>
 
-          <nav class="level-tabs" aria-label="選擇 JLPT 等級">
-            <button class="level-tab is-active" type="button" aria-current="page">N1</button>
-            <button class="level-tab" type="button" disabled>N2 <small>稍後加入</small></button>
-            <button class="level-tab" type="button" disabled>N3 <small>稍後加入</small></button>
+          <nav class="level-tabs" id="level-tabs" aria-label="選擇 JLPT 等級">
+            <button class="level-tab is-active" type="button" data-level="N1" aria-current="page" aria-pressed="true">N1</button>
+            <button class="level-tab" type="button" data-level="N2" aria-pressed="false">N2</button>
+            <button class="level-tab" type="button" data-level="N3" aria-pressed="false">N3</button>
           </nav>
 
           <nav class="round-tabs" id="round-tabs" aria-label="選擇測驗回次"></nav>

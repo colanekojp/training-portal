@@ -7,7 +7,7 @@
 - `/n1/`：N1 特訓班
 - `/n2/`：N2 特訓班
 - `/n3/`：N3 特訓班
-- `/teacher/`：老師文法測驗檢閱 Dashboard（目前提供 N1）
+- `/teacher/`：老師文法測驗檢閱 Dashboard（N1／N2／N3）
 
 GitHub Pages 自訂網域：`jlpt.colajp.com`
 

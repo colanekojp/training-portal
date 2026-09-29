@@ -1,17 +1,31 @@
 /**
- * JLPT 老師檢閱 API（獨立 GAS 專案，N1 第一版）
+ * JLPT 老師檢閱 API（獨立 GAS 專案）
  *
  * 這支程式不依賴、也不修改學生端 GAS。
- * 它只讀取正式 N1 文法題庫與點名表，統計結果寫入自己建立的快取試算表。
+ * 它只讀取正式 N1／N2／N3 文法題庫與點名表，統計結果寫入自己的快取試算表。
  */
 var TEACHER_CONFIG = Object.freeze({
-  VERSION: '1.0.0',
+  VERSION: '2.0.0',
   TIME_ZONE: 'Asia/Taipei',
-  LEVEL: 'N1',
-  GRAMMAR_SPREADSHEET_ID: '1LGmgYXIyQDsHZ1V4TClsafnifb57NQcm-UjabTHn_xI',
+  SUPPORTED_LEVELS: Object.freeze(['N1', 'N2', 'N3']),
   MAIN_SPREADSHEET_ID: '1mPkjuaWJWMhG0r9xDHLdld_N0jRXBc7hgU8dbgoX_M4',
-  ATTENDANCE_SHEET: 'N1點名表',
-  CACHE_SHEET: 'n1_stats_cache',
+  LEVELS: Object.freeze({
+    N1: Object.freeze({
+      GRAMMAR_SPREADSHEET_ID: '1LGmgYXIyQDsHZ1V4TClsafnifb57NQcm-UjabTHn_xI',
+      ATTENDANCE_SHEET: 'N1點名表',
+      CACHE_SHEET: 'n1_stats_cache'
+    }),
+    N2: Object.freeze({
+      GRAMMAR_SPREADSHEET_ID: '110IRZCIZ8bB1g4OLAfrn9Uo-1mZRZWoQpdY7m14m6Co',
+      ATTENDANCE_SHEET: 'N2點名表',
+      CACHE_SHEET: 'n2_stats_cache'
+    }),
+    N3: Object.freeze({
+      GRAMMAR_SPREADSHEET_ID: '1NDZvPQhxNK3NADs5Ufr7HsY5ezRY5T0tUOwyuP_TyM0',
+      ATTENDANCE_SHEET: 'N3點名表',
+      CACHE_SHEET: 'n3_stats_cache'
+    })
+  }),
   CACHE_SPREADSHEET_PROPERTY: 'TEACHER_CACHE_SPREADSHEET_ID',
   RESPONSE_CHUNK_SIZE: 10000,
   REFRESH_EVERY_MINUTES: 5,
@@ -49,21 +63,22 @@ function doGet(e) {
         ok: true,
         code: 'HEALTHY',
         message: '老師檢閱 API 運作正常',
-        data: { version: TEACHER_CONFIG.VERSION, level: TEACHER_CONFIG.LEVEL }
+        data: { version: TEACHER_CONFIG.VERSION, levels: TEACHER_CONFIG.SUPPORTED_LEVELS }
       };
     } else if (action === 'teacher_grammar_stats') {
       result = {
         ok: true,
         code: 'SUCCESS',
         message: '統計讀取成功',
-        data: getCachedTeacherStats_(parameters.unit)
+        data: getCachedTeacherStats_(parameters.level, parameters.unit)
       };
-    } else if (action === 'teacher_refresh_n1') {
+    } else if (action === 'teacher_refresh' || action === 'teacher_refresh_n1') {
+      var refreshLevel = action === 'teacher_refresh_n1' ? 'N1' : parameters.level;
       result = {
         ok: true,
         code: 'REFRESHED',
-        message: 'N1 統計更新完成',
-        data: refreshN1DashboardCache()
+        message: normalizeTeacherLevel_(refreshLevel) + ' 統計更新完成',
+        data: refreshTeacherDashboardCache(refreshLevel)
       };
     } else {
       throw teacherError_('INVALID_ACTION', '不支援這個老師檢閱動作');
@@ -83,15 +98,16 @@ function doPost(e) {
         ok: true,
         code: 'SUCCESS',
         message: '統計讀取成功',
-        data: getCachedTeacherStats_(payload.unit)
+        data: getCachedTeacherStats_(payload.level, payload.unit)
       });
     }
-    if (action === 'teacher_refresh_n1') {
+    if (action === 'teacher_refresh' || action === 'teacher_refresh_n1') {
+      var refreshLevel = action === 'teacher_refresh_n1' ? 'N1' : payload.level;
       return teacherJson_({
         ok: true,
         code: 'REFRESHED',
-        message: 'N1 統計更新完成',
-        data: refreshN1DashboardCache()
+        message: normalizeTeacherLevel_(refreshLevel) + ' 統計更新完成',
+        data: refreshTeacherDashboardCache(refreshLevel)
       });
     }
     throw teacherError_('INVALID_ACTION', '不支援這個老師檢閱動作');
@@ -110,23 +126,28 @@ function setupTeacherDashboard() {
   if (cacheId) {
     cacheSpreadsheet = SpreadsheetApp.openById(cacheId);
   } else {
-    cacheSpreadsheet = SpreadsheetApp.create('JLPT 老師檢閱統計快取（N1）');
+    cacheSpreadsheet = SpreadsheetApp.create('JLPT 老師檢閱統計快取');
     properties.setProperty(TEACHER_CONFIG.CACHE_SPREADSHEET_PROPERTY, cacheSpreadsheet.getId());
   }
-  ensureCacheSheet_(cacheSpreadsheet);
+  TEACHER_CONFIG.SUPPORTED_LEVELS.forEach(function (level) {
+    ensureCacheSheet_(cacheSpreadsheet, level);
+  });
 
   ScriptApp.getProjectTriggers().forEach(function (trigger) {
-    if (trigger.getHandlerFunction() === 'refreshN1DashboardCache') {
+    if (trigger.getHandlerFunction() === 'refreshN1DashboardCache'
+        || trigger.getHandlerFunction() === 'refreshAllTeacherDashboardCaches') {
       ScriptApp.deleteTrigger(trigger);
     }
   });
-  ScriptApp.newTrigger('refreshN1DashboardCache')
+  ScriptApp.newTrigger('refreshAllTeacherDashboardCaches')
     .timeBased()
     .everyMinutes(TEACHER_CONFIG.REFRESH_EVERY_MINUTES)
     .create();
 
-  var summary = refreshN1DashboardCache();
-  summary.cacheSpreadsheetUrl = cacheSpreadsheet.getUrl();
+  var summary = {
+    levels: refreshAllTeacherDashboardCaches(),
+    cacheSpreadsheetUrl: cacheSpreadsheet.getUrl()
+  };
   console.log(JSON.stringify(summary, null, 2));
   return summary;
 }
@@ -135,32 +156,42 @@ function setupTeacherDashboard() {
  * 背景工作：掃描原始資料並重建小型統計快取。
  * responses 以固定列數分批讀取，避免資料量增加時一次占用過多記憶體。
  */
-function refreshN1DashboardCache() {
-  var lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-  try {
-    var startedAt = new Date();
-    var grammarSpreadsheet = SpreadsheetApp.openById(TEACHER_CONFIG.GRAMMAR_SPREADSHEET_ID);
-    var source = buildN1SnapshotSource_(grammarSpreadsheet);
-    streamResponseStats_(grammarSpreadsheet, source);
-    var rosterCount = getN1RosterCount_();
-    var generatedAt = new Date();
-    var cacheRows = createCacheRows_(source, rosterCount, generatedAt);
-    writeCacheRows_(cacheRows);
-    return {
-      level: TEACHER_CONFIG.LEVEL,
-      cacheRowCount: cacheRows.length,
-      responseRowCount: source.responseRowCount,
-      participantCount: Object.keys(source.latestByStudentUnit).length,
-      generatedAt: teacherFormatIso_(generatedAt),
-      elapsedMs: new Date().getTime() - startedAt.getTime()
-    };
-  } finally {
-    lock.releaseLock();
-  }
+function refreshAllTeacherDashboardCaches() {
+  return TEACHER_CONFIG.SUPPORTED_LEVELS.map(function (level) {
+    return refreshTeacherDashboardCache_(level);
+  });
 }
 
-function buildN1SnapshotSource_(spreadsheet) {
+function refreshTeacherDashboardCache(levelValue) {
+  var level = normalizeTeacherLevel_(levelValue);
+  return refreshTeacherDashboardCache_(level);
+}
+
+function refreshN1DashboardCache() {
+  return refreshTeacherDashboardCache('N1');
+}
+
+function refreshTeacherDashboardCache_(level) {
+  var startedAt = new Date();
+  var levelConfig = teacherLevelConfig_(level);
+  var grammarSpreadsheet = SpreadsheetApp.openById(levelConfig.GRAMMAR_SPREADSHEET_ID);
+  var source = buildSnapshotSource_(grammarSpreadsheet, level);
+  streamResponseStats_(grammarSpreadsheet, source);
+  var rosterCount = getRosterCount_(level);
+  var generatedAt = new Date();
+  var cacheRows = createCacheRows_(source, rosterCount, generatedAt, level);
+  writeCacheRows_(cacheRows, level);
+  return {
+    level: level,
+    cacheRowCount: cacheRows.length,
+    responseRowCount: source.responseRowCount,
+    participantCount: Object.keys(source.latestByStudentUnit).length,
+    generatedAt: teacherFormatIso_(generatedAt),
+    elapsedMs: new Date().getTime() - startedAt.getTime()
+  };
+}
+
+function buildSnapshotSource_(spreadsheet, level) {
   var unitSheet = teacherSheet_(spreadsheet, 'units');
   var questionSheet = teacherSheet_(spreadsheet, 'questions');
   var attemptSheet = teacherSheet_(spreadsheet, 'attempts');
@@ -178,10 +209,10 @@ function buildN1SnapshotSource_(spreadsheet) {
 
   var units = {};
   teacherRows_(unitSheet).forEach(function (row) {
-    var level = String(row[unitHeaders.level] || '').trim().toUpperCase();
+    var rowLevel = String(row[unitHeaders.level] || '').trim().toUpperCase();
     var unit = Number(row[unitHeaders.round_no]);
     var unitId = String(row[unitHeaders.unit_id] || '').trim();
-    if (level === 'N1' && unit >= 1 && unit <= 8 && unitId) {
+    if (rowLevel === level && unit >= 1 && unit <= 8 && unitId) {
       units[unitId] = { unitId: unitId, unit: unit, title: String(row[unitHeaders.title] || '') };
     }
   });
@@ -218,7 +249,7 @@ function buildN1SnapshotSource_(spreadsheet) {
     var attemptId = String(row[attemptHeaders.attempt_id] || '').trim();
     var studentId = String(row[attemptHeaders.student_id] || '').trim().toUpperCase();
     var unitId = String(row[attemptHeaders.unit_id] || '').trim();
-    if (!attemptId || !units[unitId] || !/^N1\d{3}$/.test(studentId)
+    if (!attemptId || !units[unitId] || !(new RegExp('^' + level + '\\d{3}$')).test(studentId)
         || !teacherChecked_(row[attemptHeaders.completed])) return;
     completedAttemptCountByUnit[unitId] = (completedAttemptCountByUnit[unitId] || 0) + 1;
     var dateValue = row[attemptHeaders.submitted_at];
@@ -282,7 +313,7 @@ function streamResponseStats_(spreadsheet, source) {
   }
 }
 
-function createCacheRows_(source, rosterCount, generatedAt) {
+function createCacheRows_(source, rosterCount, generatedAt, level) {
   var now = generatedAt.getTime();
   return Object.keys(source.questions).map(function (questionId) {
     var question = source.questions[questionId];
@@ -294,7 +325,7 @@ function createCacheRows_(source, rosterCount, generatedAt) {
     var participantCount = source.participantCountByUnit[question.unitId] || 0;
     var commonWrong = teacherCommonWrong_(question);
     var row = {
-      level: 'N1', unit: unit.unit, unit_id: unit.unitId, title: unit.title,
+      level: level, unit: unit.unit, unit_id: unit.unitId, title: unit.title,
       data_status: status, roster_count: rosterCount,
       participant_count: participantCount,
       completed_attempt_count: source.completedAttemptCountByUnit[question.unitId] || 0,
@@ -335,19 +366,26 @@ function teacherCommonWrong_(question) {
   return { option: option, count: count };
 }
 
-function writeCacheRows_(rows) {
-  var cacheSpreadsheet = getCacheSpreadsheet_();
-  var sheet = ensureCacheSheet_(cacheSpreadsheet);
-  sheet.clearContents();
-  sheet.getRange(1, 1, 1, CACHE_HEADERS.length).setValues([CACHE_HEADERS]);
-  if (rows.length) {
-    sheet.getRange(2, 1, rows.length, CACHE_HEADERS.length).setValues(rows);
+function writeCacheRows_(rows, level) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var cacheSpreadsheet = getCacheSpreadsheet_();
+    var sheet = ensureCacheSheet_(cacheSpreadsheet, level);
+    sheet.clearContents();
+    sheet.getRange(1, 1, 1, CACHE_HEADERS.length).setValues([CACHE_HEADERS]);
+    if (rows.length) {
+      sheet.getRange(2, 1, rows.length, CACHE_HEADERS.length).setValues(rows);
+    }
+    sheet.setFrozenRows(1);
+    SpreadsheetApp.flush();
+  } finally {
+    lock.releaseLock();
   }
-  sheet.setFrozenRows(1);
-  SpreadsheetApp.flush();
 }
 
-function getCachedTeacherStats_(unitValue) {
+function getCachedTeacherStats_(levelValue, unitValue) {
+  var level = normalizeTeacherLevel_(levelValue);
   var unit = Number(unitValue);
   if (!Number.isInteger(unit) || unit < 1 || unit > 8) {
     throw teacherError_('INVALID_UNIT', '回次只接受 1 到 8');
@@ -355,14 +393,16 @@ function getCachedTeacherStats_(unitValue) {
   var lock = LockService.getScriptLock();
   lock.waitLock(5000);
   try {
-    var sheet = ensureCacheSheet_(getCacheSpreadsheet_());
+    var levelConfig = teacherLevelConfig_(level);
+    var sheet = ensureCacheSheet_(getCacheSpreadsheet_(), level);
     if (sheet.getLastRow() < 2) {
       throw teacherError_('CACHE_NOT_READY', '統計尚未建立，請先執行 setupTeacherDashboard');
     }
     var headers = teacherHeaders_(sheet);
-    teacherRequireHeaders_(headers, CACHE_HEADERS, TEACHER_CONFIG.CACHE_SHEET);
+    teacherRequireHeaders_(headers, CACHE_HEADERS, levelConfig.CACHE_SHEET);
     var rows = teacherRows_(sheet).filter(function (row) {
-      return Number(row[headers.unit]) === unit;
+      return String(row[headers.level] || '').trim().toUpperCase() === level
+        && Number(row[headers.unit]) === unit;
     });
     if (!rows.length) {
       throw teacherError_('CACHE_NOT_READY', '這一回尚未建立統計快取');
@@ -395,7 +435,7 @@ function getCachedTeacherStats_(unitValue) {
       return b.wrongCount - a.wrongCount || b.errorRate - a.errorRate || a.questionNo - b.questionNo;
     });
     return {
-      level: String(first[headers.level] || 'N1'), unit: unit,
+      level: String(first[headers.level] || level), unit: unit,
       unitId: String(first[headers.unit_id] || ''), title: String(first[headers.title] || ''),
       dataStatus: String(first[headers.data_status] || ''),
       rosterCount: Number(first[headers.roster_count]) || 0,
@@ -413,15 +453,17 @@ function getCachedTeacherStats_(unitValue) {
   }
 }
 
-function getN1RosterCount_() {
+function getRosterCount_(levelValue) {
+  var level = normalizeTeacherLevel_(levelValue);
+  var levelConfig = teacherLevelConfig_(level);
   var spreadsheet = SpreadsheetApp.openById(TEACHER_CONFIG.MAIN_SPREADSHEET_ID);
-  var sheet = teacherSheet_(spreadsheet, TEACHER_CONFIG.ATTENDANCE_SHEET);
+  var sheet = teacherSheet_(spreadsheet, levelConfig.ATTENDANCE_SHEET);
   var headers = teacherHeaders_(sheet);
-  var studentIndex = teacherRequireHeader_(headers, '學員編號', TEACHER_CONFIG.ATTENDANCE_SHEET);
+  var studentIndex = teacherRequireHeader_(headers, '學員編號', levelConfig.ATTENDANCE_SHEET);
   var seen = {};
   teacherRows_(sheet).forEach(function (row) {
     var studentId = String(row[studentIndex] || '').trim().toUpperCase();
-    if (/^N1\d{3}$/.test(studentId)) seen[studentId] = true;
+    if ((new RegExp('^' + level + '\\d{3}$')).test(studentId)) seen[studentId] = true;
   });
   return Object.keys(seen).length;
 }
@@ -436,10 +478,23 @@ function getCacheSpreadsheet_() {
   return SpreadsheetApp.openById(id);
 }
 
-function ensureCacheSheet_(spreadsheet) {
-  var sheet = spreadsheet.getSheetByName(TEACHER_CONFIG.CACHE_SHEET);
-  if (!sheet) sheet = spreadsheet.insertSheet(TEACHER_CONFIG.CACHE_SHEET);
+function ensureCacheSheet_(spreadsheet, levelValue) {
+  var levelConfig = teacherLevelConfig_(levelValue);
+  var sheet = spreadsheet.getSheetByName(levelConfig.CACHE_SHEET);
+  if (!sheet) sheet = spreadsheet.insertSheet(levelConfig.CACHE_SHEET);
   return sheet;
+}
+
+function normalizeTeacherLevel_(value) {
+  var level = String(value || 'N1').trim().toUpperCase();
+  if (TEACHER_CONFIG.SUPPORTED_LEVELS.indexOf(level) === -1) {
+    throw teacherError_('INVALID_LEVEL', '等級只接受 N1、N2 或 N3');
+  }
+  return level;
+}
+
+function teacherLevelConfig_(levelValue) {
+  return TEACHER_CONFIG.LEVELS[normalizeTeacherLevel_(levelValue)];
 }
 
 function teacherSheet_(spreadsheet, name) {
