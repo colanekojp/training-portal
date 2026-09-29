@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="JLPT 特訓班老師檢閱頁：查看各回文法測驗完成狀況與熱門錯題。">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="theme-color" content="#4a261d">
+    <title>N1 老師檢閱｜JLPT 特訓班</title>
+    <link rel="icon" href="../favicon.ico" sizes="any">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=20260929-1">
+    <script src="js/config.js?v=20260929-4"></script>
+    <script src="js/dashboard.js?v=20260929-4" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到統計內容</a>
+
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href="../" aria-label="返回 JLPT 特訓班入口">
+          <img src="../n1/assets/brand-logo.png" alt="王可樂日語">
+        </a>
+        <div class="header-title">
+          <span>TEACHER VIEW</span>
+          <strong>文法測驗檢閱</strong>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <section class="dashboard" id="dashboard" hidden>
+        <div class="preview-banner" id="preview-banner" hidden>
+          目前為 N1 畫面預覽，使用 2026/09/29 的部分作答資料。接上獨立老師 API 後會自動更新。
+        </div>
+
+        <div class="shell dashboard-shell">
+          <section class="dashboard-head">
+            <div>
+              <span class="eyebrow">文法測驗學習診斷</span>
+              <h1>老師檢閱 Dashboard</h1>
+              <p>先選等級與回次，再查看該回最需要在直播補充的題目。</p>
+            </div>
+            <div class="head-actions">
+              <span class="updated-at" id="updated-at">尚未載入</span>
+              <button class="button button-secondary" id="refresh-button" type="button">更新統計</button>
+            </div>
+          </section>
+
+          <nav class="level-tabs" aria-label="選擇 JLPT 等級">
+            <button class="level-tab is-active" type="button" aria-current="page">N1</button>
+            <button class="level-tab" type="button" disabled>N2 <small>稍後加入</small></button>
+            <button class="level-tab" type="button" disabled>N3 <small>稍後加入</small></button>
+          </nav>
+
+          <nav class="round-tabs" id="round-tabs" aria-label="選擇測驗回次"></nav>
+
+          <div class="loading-panel" id="loading-panel" role="status">正在讀取第 1 回統計……</div>
+          <div class="error-panel" id="error-panel" role="alert" hidden></div>
+
+          <div id="dashboard-content" hidden>
+            <section class="round-summary">
+              <div class="round-heading">
+                <div>
+                  <span class="status-pill" id="status-pill">暫定結果</span>
+                  <h2 id="round-title">N1 第 1 回</h2>
+                  <p id="round-note">截止日前的資料會持續變動。</p>
+                </div>
+                <div class="sort-control">
+                  <label for="sort-select">排序方式</label>
+                  <select id="sort-select">
+                    <option value="wrong">答錯人數最多</option>
+                    <option value="rate">錯誤率最高</option>
+                    <option value="number">依題號排列</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="metric-grid">
+                <article class="metric-card metric-primary">
+                  <span>已作答學生</span>
+                  <strong id="participant-count">–</strong>
+                  <small id="roster-summary">班級總人數待設定</small>
+                </article>
+                <article class="metric-card">
+                  <span>完成率</span>
+                  <strong id="completion-rate">–</strong>
+                  <small>每位學生採最新一次作答</small>
+                </article>
+                <article class="metric-card">
+                  <span>本回題數</span>
+                  <strong id="question-count">–</strong>
+                  <small>統計所有已送出的答案</small>
+                </article>
+                <article class="metric-card">
+                  <span>樣本狀態</span>
+                  <strong class="metric-status" id="sample-status">–</strong>
+                  <small id="sample-detail">至少 10 人後再比較較穩定</small>
+                </article>
+              </div>
+            </section>
+
+            <section class="analysis-layout">
+              <div class="ranking-panel">
+                <div class="panel-heading">
+                  <div>
+                    <span class="eyebrow">HOT QUESTIONS</span>
+                    <h2>熱門錯題排行</h2>
+                  </div>
+                  <p>點選題目，在右側查看選項分布。</p>
+                </div>
+                <div class="question-list" id="question-list"></div>
+                <div class="empty-state" id="empty-state" hidden>
+                  <strong>這一回還沒有作答資料</strong>
+                  <p>學生完成測驗後，統計會在下一次背景更新時出現。</p>
+                </div>
+              </div>
+
+              <aside class="detail-panel" id="detail-panel" aria-live="polite">
+                <div class="detail-placeholder">
+                  <span>←</span>
+                  <strong>請選一題查看詳細統計</strong>
+                  <p>會顯示完整題目、正確答案與最常被選的錯誤答案。</p>
+                </div>
+              </aside>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

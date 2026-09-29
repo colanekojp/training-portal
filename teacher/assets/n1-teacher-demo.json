@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-09-29T12:00:00+08:00",
+  "units": [
+    {
+      "level": "N1",
+      "unit": 1,
+      "unitId": "N1-R01",
+      "title": "N1 文法・閱讀模擬試題 第1回",
+      "dataStatus": "preliminary",
+      "rosterCount": 0,
+      "participantCount": 11,
+      "completedAttemptCount": 11,
+      "completionRate": 0,
+      "questionCount": 39,
+      "generatedAt": "2026-09-29T12:00:00+08:00",
+      "questionStats": [
+        {
+          "questionId": "N1-R01-Q007", "sectionNo": 1, "questionNo": 7, "questionType": "sentence_fill",
+          "prompt": "あの人、あんなに世話に（　　　）、お礼も言わないなんて、本当に腹が立つ。",
+          "options": ["なっていながら", "していながら", "なるにもかかわらず", "しているにもかかわらず"],
+          "correctOption": 1, "answeredCount": 11, "wrongCount": 8, "errorRate": 72.7,
+          "selectedCounts": [3, 3, 2, 3], "mostCommonWrongOption": 2, "mostCommonWrongCount": 3, "mostCommonWrongText": "していながら"
+        },
+        {
+          "questionId": "N1-R01-Q013", "sectionNo": 2, "questionNo": 13, "questionType": "sentence_ordering",
+          "prompt": "納得できないところがあっても、　　　 　　　 　★　 　　　ことのないようにしてください。",
+          "options": ["ような", "という", "そのままに", "しておく"],
+          "correctOption": 2, "answeredCount": 11, "wrongCount": 7, "errorRate": 63.6,
+          "selectedCounts": [2, 4, 3, 2], "mostCommonWrongOption": 3, "mostCommonWrongCount": 3, "mostCommonWrongText": "そのままに"
+        },
+        {
+          "questionId": "N1-R01-Q004", "sectionNo": 1, "questionNo": 4, "questionType": "sentence_fill",
+          "prompt": "電車が遅れた（　　　）、すっかり遅くなってしまいました。",
+          "options": ["わけですから", "ことですから", "ものですから", "んですから"],
+          "correctOption": 3, "answeredCount": 11, "wrongCount": 6, "errorRate": 54.5,
+          "selectedCounts": [2, 3, 5, 1], "mostCommonWrongOption": 2, "mostCommonWrongCount": 3, "mostCommonWrongText": "ことですから"
+        },
+        {
+          "questionId": "N1-R01-Q023", "sectionNo": 4, "questionNo": 23, "questionType": "multiple_choice",
+          "prompt": "「夢の研究」について、本文と合っているものはどれか。",
+          "options": ["研究者は懐疑的であるが、筆者は確定的だと考えている。", "筆者は懐疑的であるが、研究者は確定的だと考えている。", "研究者も筆者も、懐疑的にとらえている。", "研究者も筆者も、確定的だと考えている。"],
+          "correctOption": 2, "answeredCount": 11, "wrongCount": 6, "errorRate": 54.5,
+          "selectedCounts": [0, 5, 5, 1], "mostCommonWrongOption": 3, "mostCommonWrongCount": 5, "mostCommonWrongText": "研究者も筆者も、懐疑的にとらえている。"
+        },
+        {
+          "questionId": "N1-R01-Q005", "sectionNo": 1, "questionNo": 5, "questionType": "sentence_fill",
+          "prompt": "彼には本当にお世話になって、（　　　）。",
+          "options": ["お礼をしようとしない", "お礼をしようがない", "お礼でもしようとしない", "お礼のしようがない"],
+          "correctOption": 4, "answeredCount": 11, "wrongCount": 5, "errorRate": 45.5,
+          "selectedCounts": [1, 3, 1, 6], "mostCommonWrongOption": 2, "mostCommonWrongCount": 3, "mostCommonWrongText": "お礼をしようがない"
+        },
+        {
+          "questionId": "N1-R01-Q011", "sectionNo": 2, "questionNo": 11, "questionType": "sentence_ordering",
+          "prompt": "できそうもないことでも　　　 　　　 　★　 　　　のではないだろうか。",
+          "options": ["うまくいかない", "思い切って", "やってみれば", "とも限らない"],
+          "correctOption": 1, "answeredCount": 11, "wrongCount": 5, "errorRate": 45.5,
+          "selectedCounts": [6, 0, 2, 3], "mostCommonWrongOption": 4, "mostCommonWrongCount": 3, "mostCommonWrongText": "とも限らない"
+        }
+      ]
+    }
+  ]
+}
