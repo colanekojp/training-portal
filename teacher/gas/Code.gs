@@ -5,7 +5,7 @@
  * 它只讀取正式 N1／N2／N3 文法題庫與點名表，統計結果寫入自己的快取試算表。
  */
 var TEACHER_CONFIG = Object.freeze({
-  VERSION: '2.0.0',
+  VERSION: '2.1.0',
   TIME_ZONE: 'Asia/Taipei',
   SUPPORTED_LEVELS: Object.freeze(['N1', 'N2', 'N3']),
   MAIN_SPREADSHEET_ID: '1mPkjuaWJWMhG0r9xDHLdld_N0jRXBc7hgU8dbgoX_M4',
@@ -45,7 +45,8 @@ var CACHE_HEADERS = Object.freeze([
   'level', 'unit', 'unit_id', 'title', 'data_status',
   'roster_count', 'participant_count', 'completed_attempt_count', 'completion_rate',
   'question_count', 'question_id', 'section_no', 'question_no', 'question_type',
-  'prompt', 'option_1', 'option_2', 'option_3', 'option_4', 'correct_option',
+  'prompt', 'prompt_template', 'blank_count', 'star_position',
+  'option_1', 'option_2', 'option_3', 'option_4', 'correct_option',
   'answered_count', 'wrong_count', 'error_rate',
   'selected_1', 'selected_2', 'selected_3', 'selected_4',
   'common_wrong_option', 'common_wrong_count', 'common_wrong_text',
@@ -201,7 +202,8 @@ function buildSnapshotSource_(spreadsheet, level) {
   teacherRequireHeaders_(unitHeaders, ['unit_id', 'level', 'round_no', 'title'], 'units');
   teacherRequireHeaders_(questionHeaders, [
     'question_id', 'unit_id', 'section_no', 'question_no', 'question_type',
-    'prompt', 'option_1', 'option_2', 'option_3', 'option_4', 'correct_option'
+    'prompt', 'prompt_template', 'blank_count', 'star_position',
+    'option_1', 'option_2', 'option_3', 'option_4', 'correct_option'
   ], 'questions');
   teacherRequireHeaders_(attemptHeaders, [
     'attempt_id', 'student_id', 'unit_id', 'submitted_at', 'completed'
@@ -230,6 +232,9 @@ function buildSnapshotSource_(spreadsheet, level) {
       questionNo: Number(row[questionHeaders.question_no]) || 0,
       questionType: String(row[questionHeaders.question_type] || ''),
       prompt: String(row[questionHeaders.prompt] || ''),
+      promptTemplate: String(row[questionHeaders.prompt_template] || ''),
+      blankCount: Number(row[questionHeaders.blank_count]) || 0,
+      starPosition: Number(row[questionHeaders.star_position]) || 0,
       options: [
         String(row[questionHeaders.option_1] || ''), String(row[questionHeaders.option_2] || ''),
         String(row[questionHeaders.option_3] || ''), String(row[questionHeaders.option_4] || '')
@@ -333,7 +338,9 @@ function createCacheRows_(source, rosterCount, generatedAt, level) {
       question_count: source.questionCountByUnit[question.unitId] || 0,
       question_id: question.questionId, section_no: question.sectionNo,
       question_no: question.questionNo, question_type: question.questionType,
-      prompt: question.prompt, option_1: question.options[0], option_2: question.options[1],
+      prompt: question.prompt, prompt_template: question.promptTemplate,
+      blank_count: question.blankCount, star_position: question.starPosition,
+      option_1: question.options[0], option_2: question.options[1],
       option_3: question.options[2], option_4: question.options[3],
       correct_option: question.correctOption, answered_count: question.answeredCount,
       wrong_count: question.wrongCount,
@@ -415,6 +422,9 @@ function getCachedTeacherStats_(levelValue, unitValue) {
         questionNo: Number(row[headers.question_no]) || 0,
         questionType: String(row[headers.question_type] || ''),
         prompt: String(row[headers.prompt] || ''),
+        promptTemplate: String(row[headers.prompt_template] || ''),
+        blankCount: Number(row[headers.blank_count]) || 0,
+        starPosition: Number(row[headers.star_position]) || 0,
         options: [
           String(row[headers.option_1] || ''), String(row[headers.option_2] || ''),
           String(row[headers.option_3] || ''), String(row[headers.option_4] || '')

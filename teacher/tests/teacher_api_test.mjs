@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const sourceText = fs.readFileSync(path.join(directory, '../gas/Code.gs'), 'utf8');
+const dashboardText = fs.readFileSync(path.join(directory, '../js/dashboard.js'), 'utf8');
 const context = vm.createContext({ console });
 vm.runInContext(sourceText, context);
 
@@ -17,6 +18,8 @@ assert.equal(vm.runInContext("TEACHER_CONFIG.RESPONSE_CHUNK_SIZE", context), 100
 assert.equal(vm.runInContext("TEACHER_CONFIG.REFRESH_EVERY_MINUTES", context), 5);
 assert.equal(vm.runInContext("TEACHER_CONFIG.LEVELS.N2.CACHE_SHEET", context), 'n2_stats_cache');
 assert.equal(vm.runInContext("TEACHER_CONFIG.LEVELS.N3.CACHE_SHEET", context), 'n3_stats_cache');
+assert.match(sourceText, /'prompt', 'prompt_template', 'blank_count', 'star_position'/);
+assert.match(sourceText, /promptTemplate: String\(row\[headers\.prompt_template\]/);
 assert.deepEqual(
   JSON.parse(vm.runInContext("JSON.stringify(teacherCommonWrong_({ correctOption: 1, selectedCounts: [7, 3, 2, 3] }))", context)),
   { option: 2, count: 3 }
@@ -29,6 +32,8 @@ assert.match(sourceText, /everyMinutes\(TEACHER_CONFIG\.REFRESH_EVERY_MINUTES\)/
 assert.match(sourceText, /for \(var startRow = 2; startRow <= lastRow; startRow \+= chunkSize\)/);
 assert.doesNotMatch(sourceText, /setValue\([^)]*responses/i);
 assert.doesNotMatch(sourceText, /TEACHER_DASHBOARD_KEY|teacherAssertAccess_/);
+assert.match(dashboardText, /function renderQuestionPrompt\(question, compact = false\)/);
+assert.match(dashboardText, /teacher-ordering-slot/);
 
 function buildFixture(level, studentCount) {
   const header = ['attempt_id', 'question_id', 'selected_option', 'is_correct'];

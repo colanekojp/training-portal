@@ -294,7 +294,7 @@ function renderQuestionList() {
       <button class="question-row${selected ? ' is-selected' : ''}" type="button" data-question-id="${escapeAttribute(item.questionId)}" aria-pressed="${selected}">
         <span class="rank">${state.sort === 'number' ? `Q${number(item.questionNo)}` : index + 1}</span>
         <span class="question-copy">
-          <strong><span>第 ${number(item.questionNo)} 題</span>${escapeHtml(item.prompt || '')}</strong>
+          <strong><span class="question-label">第 ${number(item.questionNo)} 題</span>${renderQuestionPrompt(item, true)}</strong>
           <span class="rate-track"><i style="width:${rate}%"></i></span>
         </span>
         <span class="question-stat"><b>${number(item.wrongCount)}</b><small>人答錯</small></span>
@@ -344,7 +344,7 @@ function renderQuestionDetail(question) {
       <span>問題 ${number(question.sectionNo)}・第 ${number(question.questionNo)} 題</span>
       <strong>${number(question.wrongCount)} 人答錯・錯誤率 ${number(question.errorRate)}%</strong>
     </div>
-    <h3 lang="ja">${escapeHtml(question.prompt || '')}</h3>
+    <h3 lang="ja">${renderQuestionPrompt(question)}</h3>
     <div class="option-list">
       ${(question.options || []).map((option, index) => {
         const optionNo = index + 1;
@@ -365,6 +365,35 @@ function renderQuestionDetail(question) {
     <p class="detail-insight">${question.mostCommonWrongOption
       ? `最多人誤選第 ${number(question.mostCommonWrongOption)} 項，共 ${number(question.mostCommonWrongCount)} 人。`
       : '目前沒有錯誤選項資料。'}</p>`;
+}
+
+function renderQuestionPrompt(question, compact = false) {
+  const template = String(question.promptTemplate || '');
+  if (question.questionType !== 'sentence_ordering' || !template) {
+    return renderPromptText(question.prompt || '');
+  }
+
+  let slotIndex = 0;
+  const starPosition = Number(question.starPosition) || 0;
+  return template.split(/((?:\{\{(?:blank|star)\}\})+)/g).filter(Boolean).map((segment) => {
+    const tokens = segment.match(/\{\{(?:blank|star)\}\}/g);
+    if (!tokens) return renderPromptText(segment);
+    const resolvedStarPosition = starPosition
+      || tokens.findIndex((token) => token === '{{star}}') + 1;
+    return `
+      <span class="teacher-ordering-slots${compact ? ' is-compact' : ''}"
+        role="img" aria-label="4 個排列空格，第 ${resolvedStarPosition} 格是星號位置">
+        ${tokens.map((token) => {
+          slotIndex += 1;
+          const isStar = token === '{{star}}';
+          return `<span class="teacher-ordering-slot${isStar ? ' is-star' : ''}" data-slot="${slotIndex}" aria-hidden="true">${isStar ? '<span class="teacher-ordering-star">★</span>' : ''}</span>`;
+        }).join('')}
+      </span>`;
+  }).join('');
+}
+
+function renderPromptText(value) {
+  return escapeHtml(value).replaceAll('\n', '<br>');
 }
 
 function number(value) {
